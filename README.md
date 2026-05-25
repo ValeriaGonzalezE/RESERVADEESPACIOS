@@ -1,28 +1,47 @@
-# Encuestas
+# Reserva de espacios
 
-Proyecto base con:
-
-- Frontend en Ionic + Vue
-- Backend en Node + Express
-- Base de datos MySQL para login y registro
-
-## Base de datos
-
-1. Abre phpMyAdmin.
-2. Importa el archivo `backend/database/encuestas.sql`.
-3. Verifica que exista la base de datos `encuestas`.
+Aplicacion de reservas con backend Express/MySQL y frontend Vue 3 + Ionic + Pinia.
 
 ## Backend
 
-1. Entra a la carpeta `backend`.
-2. Crea un archivo `.env` usando `.env.example` como guía.
-3. Instala dependencias con `npm install`.
-4. Ejecuta el servidor con `npm run dev`.
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm start
+```
+
+Variables requeridas:
+
+- `JWT_SECRET`
+- `DB_HOST`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `PORT`
 
 ## Frontend
 
-1. Entra a la carpeta `frontend`.
-2. Instala dependencias con `npm install`.
-3. Ejecuta la app con `npm run dev`.
+```bash
+cd reserva-espacios
+npm install
+cp .env.example .env
+npm run dev
+```
 
-El frontend consume la API en `http://localhost:3000/api`.
+`VITE_API_URL` debe apuntar a la URL del backend.
+
+## Seguridad implementada
+
+- Registro/login con JWT.
+- Passwords con bcrypt.
+- Middleware de autenticacion.
+- Middleware de roles y permisos por propietario/admin.
+- Validacion de entrada con Zod.
+- Interceptor de Axios para enviar `Authorization: Bearer <token>`.
+- Controlador global de errores.
+
+## Deploy
+
+- Backend: `render.yaml`.
+- Frontend: `reserva-espacios/vercel.json`.

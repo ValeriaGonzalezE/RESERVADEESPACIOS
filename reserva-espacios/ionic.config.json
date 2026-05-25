@@ -1,0 +1,7 @@
+{
+  "name": "reserva-espacios",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
