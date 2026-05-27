@@ -2,33 +2,23 @@ const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/espacios.controller");
 const upload = require("../config/multer");
-const validate = require("../middlewares/validate.middleware");
 const {
   requireAuth,
   requireSelfOrAdmin,
   requireSpaceOwnerOrAdmin
 } = require("../middlewares/auth.middleware");
-const {
-  espacioQuerySchema,
-  espacioSchema,
-  espacioUpdateSchema,
-  comentarioSchema
-} = require("../validators/schemas");
 
-
-// Todas las rutas de espacios requieren sesion iniciada.
+// MIDDLEWARE GLOBAL DE AUTENTICACIÓN
 router.use(requireAuth);
 
-// Endpoints para listar, crear, editar, eliminar y comentar espacios.
-router.get("/", validate(espacioQuerySchema, "query"), controller.getEspacios);
-router.get("/tipos", controller.getTipos);
+router.get("/", controller.getEspacios); //RUTA: OBTENER TODOS LOS ESPACIOS
+router.get("/tipos", controller.getTipos); //RUTA: OBTENER TIPOS DE ESPACIOS
+router.post("/", upload.array("fotos", 5), controller.createEspacio); //RUTA: CREAR ESPACIO
+router.get("/mis-espacios/:id", requireSelfOrAdmin(), controller.getMisEspacios); //RUTA: OBTENER MIS ESPACIOS
+router.get("/comentarios/:id", controller.getComentarios); //RUTA: OBTENER COMENTARIOS DE UN ESPACIO
+router.get("/:id", controller.getEspacio); //RUTA: OBTENER UN ESPACIO POR ID
+router.put("/:id", requireSpaceOwnerOrAdmin, controller.updateEspacio); //RUTA: ACTUALIZAR ESPACIO
+router.delete("/:id", requireSpaceOwnerOrAdmin, controller.deleteEspacio); //RUTA: ELIMINAR ESPACIO
+router.post("/comentarios", controller.createComentario); //RUTA: CREAR COMENTARIO
 
-router.post("/", upload.array("fotos", 5), validate(espacioSchema), controller.createEspacio);
-router.get("/mis-espacios/:id", requireSelfOrAdmin(), controller.getMisEspacios);
-router.get("/comentarios/:id", controller.getComentarios);
-router.get("/:id", controller.getEspacio);
-router.put("/:id", requireSpaceOwnerOrAdmin, validate(espacioUpdateSchema), controller.updateEspacio);
-router.delete("/:id", requireSpaceOwnerOrAdmin, controller.deleteEspacio);
-router.post("/comentarios", validate(comentarioSchema), controller.createComentario);
-
-module.exports = router;
+module.exports = router; //EXPORTACIÓN DEL ROUTER

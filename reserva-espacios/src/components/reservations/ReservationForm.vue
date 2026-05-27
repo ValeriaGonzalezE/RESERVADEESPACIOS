@@ -1,13 +1,12 @@
 <template>
-  <div>
+  <div class="reservation-form">
+    <BaseInput
+      v-model="localForm.fecha"
+      label="Fecha"
+      type="date"
+      @change="emitCambio"
+    />
 
-    <!-- FECHA -->
-    <div class="input-group">
-      <label>Fecha</label>
-      <input type="date" v-model="fecha" @change="emitCambio" />
-    </div>
-
-    <!-- HORARIOS OCUPADOS -->
     <div v-if="horarios.length > 0" class="ocupados">
       <h4>Horarios ocupados</h4>
 
@@ -18,49 +17,72 @@
       </div>
     </div>
 
-    <!-- HORAS -->
     <div class="horas">
-      <div class="input-group">
-        <label>Hora inicio</label>
-        <input type="time" v-model="horaInicio" @input="emitCambio" />
-      </div>
+      <BaseInput
+        v-model="localForm.horaInicio"
+        label="Hora inicio"
+        type="time"
+        @change="emitCambio"
+      />
 
-      <div class="input-group">
-        <label>Hora fin</label>
-        <input type="time" v-model="horaFin" @input="emitCambio" />
-      </div>
+      <BaseInput
+        v-model="localForm.horaFin"
+        label="Hora fin"
+        type="time"
+        @change="emitCambio"
+      />
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { reactive, watch } from "vue";
+import BaseInput from "../ui/BaseInput.vue";
 
 const props = defineProps({
-  horarios: Array
+  horarios: {
+    type: Array,
+    default: () => []
+  },
+  modelValue: {
+    type: Object,
+    default: () => ({
+      fecha: "",
+      horaInicio: "",
+      horaFin: ""
+    })
+  }
 });
 
-const emit = defineEmits(["update"]);
+const emit = defineEmits(["update:modelValue", "update"]);
 
-const fecha = ref("");
-const horaInicio = ref("");
-const horaFin = ref("");
+const localForm = reactive({
+  fecha: props.modelValue.fecha || "",
+  horaInicio: props.modelValue.horaInicio || "",
+  horaFin: props.modelValue.horaFin || ""
+});
 
 const emitCambio = () => {
-  emit("update", {
-    fecha: fecha.value,
-    horaInicio: horaInicio.value,
-    horaFin: horaFin.value
-  });
+  const form = { ...localForm };
+  emit("update:modelValue", form);
+  emit("update", form);
 };
 
-watch([fecha, horaInicio, horaFin], emitCambio);
+watch(
+  () => props.modelValue,
+  (value) => {
+    localForm.fecha = value?.fecha || "";
+    localForm.horaInicio = value?.horaInicio || "";
+    localForm.horaFin = value?.horaFin || "";
+  },
+  { deep: true }
+);
+
+watch(localForm, emitCambio, { deep: true });
 </script>
 
 <style scoped>
-.input-group {
-  margin-bottom: 15px;
+.reservation-form {
   display: flex;
   flex-direction: column;
 }
@@ -68,12 +90,6 @@ watch([fecha, horaInicio, horaFin], emitCambio);
 .horas {
   display: flex;
   gap: 10px;
-}
-
-input {
-  padding: 8px;
-  border-radius: 5px;
-  border: none;
 }
 
 .ocupados {

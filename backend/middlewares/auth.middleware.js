@@ -1,12 +1,15 @@
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
+// FUNCIÓN AUXILIAR
 const getJwtSecret = () => process.env.JWT_SECRET || "clave_desarrollo_reservas";
 
+// MIDDLEWARE: requireAuth
 const requireAuth = (req, res, next) => {
   const header = req.headers.authorization || "";
   const [scheme, token] = header.split(" ");
 
+  // Validación del formato Bearer token
   if (scheme !== "Bearer" || !token) {
     return res.status(401).json({
       success: false,
@@ -15,6 +18,7 @@ const requireAuth = (req, res, next) => {
   }
 
   try {
+    // Verificación del token JWT
     req.user = jwt.verify(token, getJwtSecret());
     next();
   } catch (err) {
@@ -25,6 +29,7 @@ const requireAuth = (req, res, next) => {
   }
 };
 
+// MIDDLEWARE: requireRole
 const requireRole = (...roles) => (req, res, next) => {
   if (!req.user || !roles.includes(req.user.rol)) {
     return res.status(403).json({
@@ -36,6 +41,7 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
+// MIDDLEWARE: requireSelfOrAdmin
 const requireSelfOrAdmin = (param = "id") => (req, res, next) => {
   const requestedId = Number(req.params[param]);
 
@@ -49,6 +55,7 @@ const requireSelfOrAdmin = (param = "id") => (req, res, next) => {
   });
 };
 
+// MIDDLEWARE: requireSpaceOwnerOrAdmin
 const requireSpaceOwnerOrAdmin = (req, res, next) => {
   if (req.user?.rol === "admin") {
     return next();
@@ -79,6 +86,7 @@ const requireSpaceOwnerOrAdmin = (req, res, next) => {
   );
 };
 
+// MIDDLEWARE: requireReservationOwnerOrAdmin
 const requireReservationOwnerOrAdmin = (param = "id") => (req, res, next) => {
   if (req.user?.rol === "admin") {
     return next();
@@ -109,6 +117,7 @@ const requireReservationOwnerOrAdmin = (param = "id") => (req, res, next) => {
   );
 };
 
+// EXPORTACIÓN DE MIDDLEWARES
 module.exports = {
   requireAuth,
   requireRole,

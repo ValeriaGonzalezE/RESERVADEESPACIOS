@@ -1,5 +1,6 @@
 const db = require("../config/db");
 
+// OBTENER ESPACIOS CON FILTROS
 exports.getEspacios = (filters, callback) => {
   const { fecha, tipo, pago } = filters;
 
@@ -12,7 +13,7 @@ exports.getEspacios = (filters, callback) => {
 
   let params = [];
 
-  // FILTRO POR FECHA (CLAVE)
+  // FILTRO: disponibilidad por fecha (evita espacios ya reservados)
   if (fecha) {
     sql += `
       AND e.id NOT IN (
@@ -25,13 +26,13 @@ exports.getEspacios = (filters, callback) => {
     params.push(fecha);
   }
 
-  // FILTRO POR TIPO
+  // FILTRO: tipo de espacio
   if (tipo) {
     sql += " AND t.nombre = ?";
     params.push(tipo);
   }
 
-  // FILTRO POR PAGO
+  // FILTRO: si es de pago o gratis
   if (pago) {
     sql += " AND e.requiere_pago = ?";
     params.push(pago);
@@ -40,10 +41,12 @@ exports.getEspacios = (filters, callback) => {
   db.query(sql, params, callback);
 };
 
+// OBTENER TIPOS DE ESPACIOS
 exports.getTipos = (callback) => {
   db.query("SELECT * FROM tipos_espacio", callback);
 };
 
+// CREAR ESPACIO
 exports.createEspacio = (data, callback) => {
   db.query(
     `INSERT INTO espacios 
@@ -63,6 +66,7 @@ exports.createEspacio = (data, callback) => {
   );
 };
 
+// OBTENER ESPACIOS DE UN USUARIO
 exports.getMisEspacios = (id, callback) => {
   db.query(
     `SELECT e.*, t.nombre AS tipo
@@ -74,18 +78,21 @@ exports.getMisEspacios = (id, callback) => {
   );
 };
 
+// OBTENER UN ESPACIO POR ID
 exports.getEspacio = (id, callback) => {
   db.query("SELECT * FROM espacios WHERE id = ?", [id], callback);
 };
 
+// ACTUALIZAR ESPACIO
 exports.updateEspacio = (id, data, callback) => {
   db.query(
     `UPDATE espacios SET 
-      nombre=?, capacidad=?, ubicacion=?, descripcion=?, 
+      nombre=?, tipo_id=?, capacidad=?, ubicacion=?, descripcion=?, 
       estado=?, requiere_pago=?, precio=?
      WHERE id=?`,
     [
       data.nombre,
+      data.tipo_id,
       data.capacidad,
       data.ubicacion,
       data.descripcion,
@@ -98,10 +105,12 @@ exports.updateEspacio = (id, data, callback) => {
   );
 };
 
+// ELIMINAR ESPACIO
 exports.deleteEspacio = (id, callback) => {
   db.query("DELETE FROM espacios WHERE id = ?", [id], callback);
 };
 
+// OBTENER COMENTARIOS DE UN ESPACIO
 exports.getComentarios = (id, callback) => {
   db.query(
     `SELECT c.*, u.nombre 
@@ -114,6 +123,7 @@ exports.getComentarios = (id, callback) => {
   );
 };
 
+// CREAR COMENTARIO
 exports.createComentario = (data, callback) => {
   db.query(
     `INSERT INTO comentarios (espacio_id, usuario_id, comentario, estrellas)

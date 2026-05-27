@@ -4,79 +4,93 @@ import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
 
 import BackButton from "@/components/ui/BackButton.vue";
-import BaseInput from "@/components/ui/BaseInput.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
+import ReservationForm from "@/components/reservations/ReservationForm.vue";
 
 const route = useRoute();
 const router = useRouter();
-
 const id = route.params.id;
 
 const reserva = ref(null);
+const horariosOcupados = ref([]);
+const reservaForm = ref({
+  fecha: "",
+  horaInicio: "",
+  horaFin: ""
+});
 
-const nuevaFecha = ref("");
-const nuevaHoraInicio = ref("");
-const nuevaHoraFin = ref("");
-
-// FORMATEO SEGURO
 const formatearFecha = (fecha) => {
   if (!fecha) return "-";
-  const f = new Date(fecha);
-  return isNaN(f) ? "-" : f.toLocaleDateString("es-CO");
+  const value = new Date(fecha);
+  return Number.isNaN(value.getTime()) ? "-" : value.toLocaleDateString("es-CO");
 };
 
 onMounted(async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user"));
+  const res = await api.get(`/reservas/mis-reservas/${user.id}`);
+  const encontrada = res.data.find((item) => item.id == id);
 
-    const res = await api.get(`/reservas/mis-reservas/${user.id}`);
-
-    const encontrada = res.data.find(r => r.id == id);
-
-    if (!encontrada) {
-      alert("Reserva no encontrada");
-      return router.back();
-    }
-
-    reserva.value = encontrada;
-
-    nuevaFecha.value = encontrada.fecha?.split("T")[0] || "";
-    nuevaHoraInicio.value = encontrada.hora_inicio || "";
-    nuevaHoraFin.value = encontrada.hora_fin || "";
-
-  } catch (err) {
-    console.error(err);
+  if (!encontrada) {
+    alert("Reserva no encontrada");
+    router.back();
+    return;
   }
+
+  reserva.value = encontrada;
+  reservaForm.value = {
+    fecha: encontrada.fecha?.split("T")[0] || "",
+    horaInicio: encontrada.hora_inicio || "",
+    horaFin: encontrada.hora_fin || ""
+  };
+
+  await cargarHorariosOcupados();
 });
 
-// VALIDACIÓN + GUARDAR
-const guardar = async () => {
+const cargarHorariosOcupados = async () => {
+  if (!reserva.value?.espacio_id || !reservaForm.value.fecha) {
+    horariosOcupados.value = [];
+    return;
+  }
 
-  if (!nuevaFecha.value || !nuevaHoraInicio.value || !nuevaHoraFin.value) {
+  const res = await api.get("/reservas/por-espacio", {
+    params: {
+      espacio_id: reserva.value.espacio_id,
+      fecha: reservaForm.value.fecha
+    }
+  });
+
+  horariosOcupados.value = res.data.filter((item) => item.id !== Number(id));
+};
+
+const guardar = async () => {
+  const { fecha, horaInicio, horaFin } = reservaForm.value;
+
+  if (!fecha || !horaInicio || !horaFin) {
     return alert("Completa todos los campos");
   }
 
-  if (nuevaHoraInicio.value >= nuevaHoraFin.value) {
-    return alert("Hora fin debe ser mayor");
+  if (horaInicio >= horaFin) {
+    return alert("La hora fin debe ser mayor");
   }
 
   const res = await api.put(`/reservas/${id}`, {
-    fecha: nuevaFecha.value,
-    hora_inicio: nuevaHoraInicio.value,
-    hora_fin: nuevaHoraFin.value
+    fecha,
+    hora_inicio: horaInicio,
+    hora_fin: horaFin
   });
 
-  if (res.data.success) {
-    alert("Reserva reprogramada");
-    router.back();
-  } else {
-    alert(res.data.message);
+  if (!res.data.success) {
+    return alert(res.data.message || "No se pudo actualizar");
   }
+
+  alert("Reserva reprogramada");
+  router.back();
 };
 
-// CANCELAR
 const cancelar = async () => {
-  if (!confirm("¿Seguro que quieres cancelar la reserva?")) return;
+  if (!confirm("Seguro que quieres cancelar la reserva?")) {
+    return;
+  }
 
   await api.put(`/reservas/cancelar/${id}`);
   alert("Reserva cancelada");
@@ -87,33 +101,22 @@ const cancelar = async () => {
 <template>
   <ion-page>
     <ion-content>
-
       <div class="page">
-
         <BackButton class="back-floating" />
 
         <div class="container">
-
-          <!-- INFO ACTUAL -->
           <div class="card">
             <h3>Reserva actual</h3>
-
-            <p>📅 {{ formatearFecha(reserva?.fecha) }}</p>
-
-            <p>
-              ⏰
-              {{ reserva?.hora_inicio || "-" }}
-              -
-              {{ reserva?.hora_fin || "-" }}
-            </p>
+            <p>{{ formatearFecha(reserva?.fecha) }}</p>
+            <p>{{ reserva?.hora_inicio || "-" }} - {{ reserva?.hora_fin || "-" }}</p>
           </div>
 
-          <!-- FORM -->
           <div class="form">
-
-            <BaseInput label="Nueva fecha" type="date" v-model="nuevaFecha" />
-            <BaseInput label="Hora inicio" type="time" v-model="nuevaHoraInicio" />
-            <BaseInput label="Hora fin" type="time" v-model="nuevaHoraFin" />
+            <ReservationForm
+              v-model="reservaForm"
+              :horarios="horariosOcupados"
+              @update="cargarHorariosOcupados"
+            />
 
             <BaseButton @click="guardar">
               Guardar cambios
@@ -122,13 +125,9 @@ const cancelar = async () => {
             <p class="cancelar-texto" @click="cancelar">
               Cancelar reserva
             </p>
-
           </div>
-
         </div>
-
       </div>
-
     </ion-content>
   </ion-page>
 </template>
@@ -149,7 +148,6 @@ const cancelar = async () => {
   box-shadow: 0 0 25px rgba(255, 46, 98, 0.6);
 }
 
-/* CARD ACTUAL */
 .card {
   background: #232323;
   padding: 20px;
@@ -158,29 +156,11 @@ const cancelar = async () => {
   border-left: 5px solid #ff2e63;
 }
 
-/* FORM */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
 }
 
-/* BOTÓN CANCELAR */
-.cancelar {
-  background: #ff2e63;
-  border: none;
-  padding: 12px;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.cancelar:hover {
-  background: #ff5f7e;
-}
-
-/* BACK */
 .back-floating {
   position: absolute;
   top: 15px;
@@ -194,9 +174,5 @@ const cancelar = async () => {
   font-weight: bold;
   cursor: pointer;
   text-align: center;
-}
-
-.cancelar-texto:hover {
-  text-decoration: underline;
 }
 </style>

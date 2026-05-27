@@ -1,78 +1,81 @@
 <script setup>
-const props = defineProps({
+import BaseButton from "../ui/BaseButton.vue";
+import BaseInput from "../ui/BaseInput.vue";
+
+defineProps({
   espacio: Object,
   tipos: Array
 });
 
-// Emite el guardado al componente padre, que es quien realiza la peticion.
 const emit = defineEmits(["guardar"]);
 </script>
 
 <template>
-  <div class="form">
+  <form class="form" @submit.prevent="emit('guardar')">
+    <BaseInput
+      v-model="espacio.nombre"
+      label="Nombre"
+      placeholder="Ej: Salon principal"
+    />
 
-    <label>Nombre</label>
-    <input v-model="espacio.nombre" />
+    <BaseInput
+      v-model="espacio.tipo_id"
+      label="Tipo"
+      type="select"
+      disabled-option="Selecciona"
+      :options="tipos.map((tipo) => ({ value: String(tipo.id), label: tipo.nombre }))"
+    />
 
-    <label>Tipo</label>
-    <select v-model="espacio.tipo_id">
-      <option disabled value="">Selecciona</option>
-      <option v-for="t in tipos" :key="t.id" :value="t.id">
-        {{ t.nombre }}
-      </option>
-    </select>
+    <BaseInput
+      v-model="espacio.capacidad"
+      label="Capacidad"
+      type="number"
+      min="1"
+      placeholder="Ej: 30"
+    />
 
-    <label>Capacidad</label>
-    <input type="number" v-model="espacio.capacidad" />
+    <BaseInput
+      v-model="espacio.ubicacion"
+      label="Ubicacion"
+      placeholder="Ej: Calle 1 #1A-1, barrio"
+    />
 
-    <label>Ubicación</label>
-    <input v-model="espacio.ubicacion" placeholder="Ej: Calle 1 #1A-1, barrio" />
+    <BaseInput
+      v-model="espacio.descripcion"
+      label="Descripcion"
+      type="textarea"
+      placeholder="Describe el espacio"
+    />
 
-    <label>Descripción</label>
-    <textarea v-model="espacio.descripcion"></textarea>
+    <BaseInput
+      v-model="espacio.requiere_pago"
+      label="Requiere pago"
+      type="select"
+      disabled-option="Selecciona"
+      :options="[
+        { value: 'no', label: 'Gratis' },
+        { value: 'si', label: 'De pago' }
+      ]"
+    />
 
-    <label>¿Pago?</label>
-    <select v-model="espacio.requiere_pago">
-      <option disabled value="">Selecciona</option>
-      <option value="no">Gratis</option>
-      <option value="si">De pago</option>
-    </select>
+    <BaseInput
+      v-if="espacio.requiere_pago === 'si'"
+      v-model="espacio.precio"
+      label="Precio"
+      type="number"
+      min="0"
+      placeholder="Ej: 50000"
+    />
 
-    <div v-if="espacio.requiere_pago === 'si'">
-      <label>Precio</label>
-      <input type="number" v-model="espacio.precio" />
-    </div>
-
-    <button type="button" @click="() => { console.log('CLICK HIJO'); emit('guardar') }">
+    <BaseButton type="submit">
       Guardar
-    </button>
-
-  </div>
+    </BaseButton>
+  </form>
 </template>
 
 <style scoped>
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-input,
-textarea,
-select {
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  background: #0f0f0f;
-  color: white;
-}
-
-button {
-  margin-top: 15px;
-  padding: 12px;
-  background: #ff2e63;
-  border: none;
-  border-radius: 10px;
-  color: white;
 }
 </style>

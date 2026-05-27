@@ -1,8 +1,9 @@
 const db = require("../config/db");
 
+// ACTUALIZAR USUARIO
 exports.updateUsuario = (id, data, callback) => {
 
-  // si NO cambia password
+  // CASO 1: NO SE ACTUALIZA LA CONTRASEÑA
   if (!data.password || data.password === "") {
 
     db.query(
@@ -26,7 +27,7 @@ exports.updateUsuario = (id, data, callback) => {
 
   } else {
 
-    // si cambia password
+    // CASO 2: SE ACTUALIZA LA CONTRASEÑA
     db.query(
       `UPDATE usuarios SET 
       nombre=?,

@@ -1,49 +1,38 @@
 <template>
-
-  <div class="form-box">
-
-    <!-- FOTO -->
+  <form class="form-box" @submit.prevent="guardar">
     <div class="photo-section">
-
       <img :src="preview || form.foto || defaultImg" class="avatar" />
 
-      <!-- SUBIR ARCHIVO -->
       <input type="file" accept="image/*" @change="seleccionarFoto" />
 
       <p class="or">o</p>
-      URL
-      <!-- URL -->
-      <BaseInput v-model="form.foto" placeholder="URL de imagen" />
-      
+
+      <BaseInput
+        v-model="form.foto"
+        label="URL de imagen"
+        placeholder="https://..."
+      />
     </div>
 
-    <label>Nombre</label>
-    <BaseInput v-model="form.nombre" />
+    <BaseInput v-model="form.nombre" label="Nombre" />
+    <BaseInput v-model="form.apellido" label="Apellido" />
+    <BaseInput v-model="form.email" label="Email" />
+    <BaseInput v-model="form.telefono" label="Telefono" />
+    <BaseInput
+      type="password"
+      v-model="form.password"
+      label="Nueva contrasena"
+      placeholder="Opcional"
+    />
 
-    <label>Apellido</label>
-    <BaseInput v-model="form.apellido" />
-
-    <label>Email</label>
-    <BaseInput v-model="form.email" />
-
-    <label>Teléfono</label>
-    <BaseInput v-model="form.telefono" />
-
-    <label>Nueva contraseña</label>
-
-    <BaseInput type="password" v-model="form.password" placeholder="Opcional" />
-
-    <BaseButton @click="guardar">
+    <BaseButton type="submit">
       Guardar cambios
     </BaseButton>
-
-  </div>
-
+  </form>
 </template>
 
 <script setup>
 import { reactive, ref, watch } from "vue";
-
 import BaseInput from "../ui/BaseInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
@@ -58,59 +47,52 @@ const defaultImg =
 
 const preview = ref("");
 
-// Crea una copia editable del usuario y separa la foto temporal de la contrasena nueva.
 const form = reactive({
   ...props.user,
   password: "",
   fotoFile: null
 });
 
-// Si el usuario escribe una URL de imagen, la muestra de inmediato en la preview.
-watch(() => form.foto, (val) => {
-  if (val && !form.fotoFile) {
-    preview.value = val;
+watch(() => form.foto, (value) => {
+  if (value && !form.fotoFile) {
+    preview.value = value;
   }
 });
 
-// Guarda el archivo seleccionado y genera una vista previa local.
-const seleccionarFoto = (e) => {
+const seleccionarFoto = (event) => {
+  const file = event.target.files[0];
 
-  const file = e.target.files[0];
-  if (!file) return;
+  if (!file) {
+    return;
+  }
+
   form.fotoFile = file;
-  preview.value =
-    URL.createObjectURL(file);
-
+  preview.value = URL.createObjectURL(file);
 };
 
-// Empaqueta texto e imagen en FormData antes de emitir el envio al padre.
 const guardar = () => {
-
   const data = new FormData();
 
-  data.append("nombre", form.nombre);
-  data.append("apellido", form.apellido);
-  data.append("email", form.email);
-  data.append("telefono", form.telefono);
-  data.append("password", form.password);
+  data.append("nombre", form.nombre || "");
+  data.append("apellido", form.apellido || "");
+  data.append("email", form.email || "");
+  data.append("telefono", form.telefono || "");
+  data.append("password", form.password || "");
 
-  // si seleccionó archivo
   if (form.fotoFile) {
     data.append("foto", form.fotoFile);
   } else {
-    // si usa URL
     data.append("foto", form.foto || "");
   }
+
   emit("submit", data);
 };
 </script>
 
 <style scoped>
 .form-box {
-  background:
-    rgba(255, 255, 255, 0.04);
-  border:
-    1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   padding: 20px;
   display: flex;
@@ -137,10 +119,5 @@ const guardar = () => {
 .or {
   color: #888;
   margin: 0;
-}
-
-label {
-  color: #ff2e63;
-  font-weight: bold;
 }
 </style>

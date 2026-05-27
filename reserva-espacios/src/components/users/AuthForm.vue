@@ -1,59 +1,59 @@
 <template>
-  <div>
+  <form class="form-box" @submit.prevent="$emit('submit', { ...form })">
+    <BaseInput
+      v-for="field in fields"
+      :key="field.model"
+      v-model="form[field.model]"
+      :label="field.label"
+      :type="field.type || 'text'"
+      :placeholder="field.placeholder || ''"
+      @blur="handleEmail(field.model)"
+    />
 
-    <div v-for="f in fields" :key="f.model" class="input-group">
-      <label class="input-label">
-        {{ f.label }}
-      </label>
-
-      <BaseInput v-model="form[f.model]" :type="f.type || 'text'" :placeholder="f.placeholder"
-        @blur="handleEmail(f.model)" />
-    </div>
-
-    <BaseButton @click="$emit('submit', form)">
+    <BaseButton type="submit">
       {{ buttonText }}
     </BaseButton>
-
-  </div>
+  </form>
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { reactive, watchEffect } from "vue";
 import BaseInput from "../ui/BaseInput.vue";
 import BaseButton from "../ui/BaseButton.vue";
 
 const props = defineProps({
-  fields: Array,
-  buttonText: String
+  fields: {
+    type: Array,
+    default: () => []
+  },
+  buttonText: {
+    type: String,
+    default: "Guardar"
+  }
 });
 
-// Guarda dinamicamente los valores escritos en los campos definidos por el componente padre.
 const form = reactive({});
 
-// AGREGA @gmail.com SI EL USUARIO NO ESCRIBE DOMINIO
+watchEffect(() => {
+  props.fields.forEach((field) => {
+    if (!(field.model in form)) {
+      form[field.model] = field.initialValue || "";
+    }
+  });
+});
+
 const handleEmail = (model) => {
   const value = form[model];
 
-  if (
-    model === "codigo" &&
-    value &&
-    !value.includes("@")
-  ) {
+  if ((model === "codigo" || model === "email") && value && !value.includes("@")) {
     form[model] = value + "@gmail.com";
   }
 };
 </script>
 
 <style scoped>
-.input-group {
-  margin-bottom: 18px;
-}
-
-.input-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #444;
+.form-box {
+  display: flex;
+  flex-direction: column;
 }
 </style>

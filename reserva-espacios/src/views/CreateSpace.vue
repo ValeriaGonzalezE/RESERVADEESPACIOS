@@ -1,11 +1,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import api from "@/services/api";
-import { useUserStore } from "@/stores/UserStore";
-
 import SpaceForm from "@/components/espacios/SpaceForm.vue";
 
-const userStore = useUserStore();
+const router = useRouter();
 
 const espacio = ref({
   nombre: "",
@@ -14,62 +13,69 @@ const espacio = ref({
   ubicacion: "",
   descripcion: "",
   requiere_pago: "",
-  precio: 0
+  precio: "0"
 });
 
 const tipos = ref([]);
-
-// Carga los tipos de espacio que alimentan el formulario de creacion.
-onMounted(async () => {
-  const res = await api.get("/espacios/tipos");
-  console.log("TIPOS RESPONSE:", res);
-  console.log("TIPOS DATA:", res.data);
-  tipos.value = res.data;
-});
-
-// Empaqueta datos e imagenes en FormData para crear el espacio.
-const crear = async () => {
-
-  console.log("CREAR EJECUTADO");
-
-  const formData = new FormData();
-
-  Object.keys(espacio.value).forEach(key => {
-    formData.append(key, espacio.value[key]);
-  });
-
-  formData.append("usuario_id", userStore.user.id);
-
-  fotos.value.forEach(f => {
-    formData.append("fotos", f);
-  });
-
-  await api.post("/espacios", formData);
-
-  alert("Espacio creado");
-};
-
 const fotos = ref([]);
 const previews = ref([]);
 
-// Agrega imagenes sin repetirlas y crea previews antes del envio.
-const onFileChange = (e) => {
-  const files = Array.from(e.target.files);
+onMounted(async () => {
+  const res = await api.get("/espacios/tipos");
+  tipos.value = res.data;
+});
 
-  files.forEach(file => {
-    // evita duplicados por nombre
-    const yaExiste = fotos.value.some(f => f.name === file.name);
+const crear = async () => {
+  if (!espacio.value.nombre?.trim()) {
+    return alert("Ingresa el nombre del espacio");
+  }
 
-    if (!yaExiste && fotos.value.length < 5) {
+  if (!espacio.value.tipo_id) {
+    return alert("Selecciona el tipo de espacio");
+  }
+
+  if (!espacio.value.capacidad || Number(espacio.value.capacidad) <= 0) {
+    return alert("La capacidad debe ser mayor a 0");
+  }
+
+  if (!espacio.value.ubicacion?.trim()) {
+    return alert("Ingresa la ubicacion");
+  }
+
+  if (espacio.value.requiere_pago === "si" && Number(espacio.value.precio) < 0) {
+    return alert("El precio no puede ser negativo");
+  }
+
+  const formData = new FormData();
+
+  Object.entries(espacio.value).forEach(([key, value]) => {
+    formData.append(key, value || "");
+  });
+
+  fotos.value.forEach((foto) => {
+    formData.append("fotos", foto);
+  });
+
+  await api.post("/espacios", formData);
+  alert("Espacio creado");
+  router.push("/my-spaces");
+};
+
+const onFileChange = (event) => {
+  const files = Array.from(event.target.files || []);
+
+  files.forEach((file) => {
+    const exists = fotos.value.some((item) => item.name === file.name);
+
+    if (!exists && fotos.value.length < 5) {
       fotos.value.push(file);
       previews.value.push(URL.createObjectURL(file));
     }
   });
 
-  e.target.value = ""; // permite volver a seleccionar el mismo archivo
+  event.target.value = "";
 };
 
-// Elimina una foto seleccionada tanto del arreglo como de la vista previa.
 const eliminarFoto = (index) => {
   fotos.value.splice(index, 1);
   previews.value.splice(index, 1);
@@ -79,37 +85,25 @@ const eliminarFoto = (index) => {
 <template>
   <ion-page>
     <ion-content>
-
       <div class="page">
-
         <div class="container">
-
           <h2>Crear Espacio</h2>
 
           <div class="upload">
-            <br>
-            <label>Fotos (máx 5)</label>
-
+            <label>Fotos (max 5)</label>
             <input type="file" multiple @change="onFileChange" />
 
             <div class="preview">
-
-              <div v-for="(img, i) in previews" :key="i" class="img-box">
-
+              <div v-for="(img, index) in previews" :key="index" class="img-box">
                 <img :src="img" />
-
-                <button @click="eliminarFoto(i)">✕</button>
-
+                <button @click="eliminarFoto(index)">x</button>
               </div>
-
             </div>
-            <br>
           </div>
+
           <SpaceForm :espacio="espacio" :tipos="tipos" @guardar="crear" />
         </div>
-
       </div>
-
     </ion-content>
   </ion-page>
 </template>
@@ -122,8 +116,8 @@ const eliminarFoto = (index) => {
   color: white;
 }
 
-.form-container {
-  margin-top: 40px;
+.container {
+  margin-top: 20px;
   background: #1e1e1e;
   padding: 25px;
   border-radius: 15px;
@@ -131,20 +125,7 @@ const eliminarFoto = (index) => {
 }
 
 .upload {
-  margin-top: 20px;
-}
-
-.preview {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.preview img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 10px;
+  margin: 20px 0;
 }
 
 .preview {

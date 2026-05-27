@@ -1,27 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/reservas.controller");
-const validate = require("../middlewares/validate.middleware");
 const {
   requireAuth,
   requireSelfOrAdmin,
   requireReservationOwnerOrAdmin
 } = require("../middlewares/auth.middleware");
-const {
-  reservaDisponibilidadQuerySchema,
-  reservaSchema,
-  reservaUpdateSchema
-} = require("../validators/schemas");
 
-// Todas las rutas de reservas exigen autenticacion.
+// MIDDLEWARE GLOBAL DE AUTENTICACIÓN
 router.use(requireAuth);
 
-// Endpoints para consultar disponibilidad y administrar reservas.
-router.get("/por-espacio", validate(reservaDisponibilidadQuerySchema, "query"), controller.getReservasPorEspacio);
-router.get("/espacio/:id", controller.getReservasEspacio);
-router.post("/", validate(reservaSchema), controller.createReserva);
-router.get("/mis-reservas/:id", requireSelfOrAdmin(), controller.getMisReservas);
-router.put("/cancelar/:id", requireReservationOwnerOrAdmin(), controller.cancelarReserva);
-router.put("/:id", requireReservationOwnerOrAdmin(), validate(reservaUpdateSchema), controller.updateReserva);
+router.get("/por-espacio", controller.getReservasPorEspacio); //RUTA: VER RESERVAS POR ESPACIO Y FECHA
+router.get("/espacio/:id", controller.getReservasEspacio); //RUTA: VER TODAS LAS RESERVAS DE UN ESPACIO
+router.post("/", controller.createReserva); //RUTA: CREAR RESERVA
+router.get("/mis-reservas/:id", requireSelfOrAdmin(), controller.getMisReservas); //RUTA: VER MIS RESERVAS
+router.put("/cancelar/:id", requireReservationOwnerOrAdmin(), controller.cancelarReserva); //RUTA: CANCELAR RESERVA
+router.put("/:id", requireReservationOwnerOrAdmin(), controller.updateReserva); //RUTA: ACTUALIZAR RESERVA
 
-module.exports = router;
+module.exports = router; //EXPORTACIÓN DEL ROUTER

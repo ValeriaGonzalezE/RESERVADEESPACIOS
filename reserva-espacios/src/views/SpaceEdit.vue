@@ -1,158 +1,101 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-
 import api from "@/services/api";
-
 import BackButton from "@/components/ui/BackButton.vue";
+import BaseButton from "@/components/ui/BaseButton.vue";
+import SpaceForm from "@/components/espacios/SpaceForm.vue";
 
 const route = useRoute();
 const router = useRouter();
 
-const espacio = ref({});
+const espacio = ref({
+  nombre: "",
+  tipo_id: "",
+  capacidad: "",
+  ubicacion: "",
+  descripcion: "",
+  requiere_pago: "no",
+  precio: "0",
+  estado: "activo"
+});
+
 const tipos = ref([]);
 
 onMounted(async () => {
+  const [espacioRes, tiposRes] = await Promise.all([
+    api.get(`/espacios/${route.params.id}`),
+    api.get("/espacios/tipos")
+  ]);
 
-  const res =
-    await api.get(`/espacios/${route.params.id}`);
-
-  espacio.value = res.data;
-
-  const tiposRes =
-    await api.get("/espacios/tipos");
-
+  espacio.value = {
+    ...espacio.value,
+    ...espacioRes.data,
+    tipo_id: String(espacioRes.data.tipo_id || ""),
+    capacidad: String(espacioRes.data.capacidad || ""),
+    precio: String(espacioRes.data.precio || "0")
+  };
   tipos.value = tiposRes.data;
-
 });
 
-// guardar
 const guardar = async () => {
+  if (!espacio.value.nombre?.trim()) {
+    return alert("Ingresa el nombre del espacio");
+  }
 
-  await api.put(
-    `/espacios/${route.params.id}`,
-    espacio.value
-  );
+  if (!espacio.value.ubicacion?.trim()) {
+    return alert("Ingresa la ubicacion");
+  }
 
+  if (!espacio.value.capacidad || Number(espacio.value.capacidad) <= 0) {
+    return alert("La capacidad debe ser mayor a 0");
+  }
+
+  await api.put(`/espacios/${route.params.id}`, espacio.value);
   alert("Espacio actualizado");
-
 };
 
-// eliminar
 const eliminar = async () => {
+  if (!confirm("Eliminar espacio?")) {
+    return;
+  }
 
-  if (!confirm("¿Eliminar espacio?")) return;
-
-  await api.delete(
-    `/espacios/${route.params.id}`
-  );
-
+  await api.delete(`/espacios/${route.params.id}`);
   router.push("/my-spaces");
-
 };
 
-// activar/inactivar
 const toggleEstado = async () => {
-
-  espacio.value.estado =
-    espacio.value.estado === "activo"
-      ? "inactivo"
-      : "activo";
-
+  espacio.value.estado = espacio.value.estado === "activo" ? "inactivo" : "activo";
   await guardar();
-
 };
 </script>
 
 <template>
   <ion-page>
     <ion-content>
-
       <div class="page">
-
         <BackButton class="back-floating" />
 
         <div class="container">
-
           <div class="form-box">
+            <SpaceForm :espacio="espacio" :tipos="tipos" @guardar="guardar" />
 
-            <label>Nombre</label>
-            <input v-model="espacio.nombre" />
+            <BaseButton variant="secondary" @click="toggleEstado">
+              {{ espacio.estado === "activo" ? "Inhabilitar espacio" : "Activar espacio" }}
+            </BaseButton>
 
-            <label>Descripción</label>
-            <textarea v-model="espacio.descripcion"></textarea>
-
-            <label>Ubicación</label>
-            <input v-model="espacio.ubicacion" />
-
-            <label>Capacidad</label>
-            <input
-              type="number"
-              v-model="espacio.capacidad"
-            />
-
-            <label>Tipo</label>
-
-            <select v-model="espacio.tipo_id">
-
-              <option
-                v-for="t in tipos"
-                :key="t.id"
-                :value="t.id"
-              >
-                {{ t.nombre }}
-              </option>
-
-            </select>
-
-            <label>Precio</label>
-
-            <input
-              type="number"
-              v-model="espacio.precio"
-            />
-
-            <button
-              class="save-btn"
-              @click="guardar"
-            >
-              Guardar cambios
-            </button>
-
-            <button
-              class="state-btn"
-              @click="toggleEstado"
-            >
-              {{
-                espacio.estado === "activo"
-                  ? "Inhabilitar espacio"
-                  : "Activar espacio"
-              }}
-            </button>
-
-            <p
-              class="delete-text"
-              @click="eliminar"
-            >
-              Eliminar espacio
-            </p>
-
+            <p class="delete-text" @click="eliminar">Eliminar espacio</p>
           </div>
-
         </div>
-
       </div>
-
     </ion-content>
   </ion-page>
 </template>
 
 <style scoped>
-
 .page {
   min-height: 100vh;
-  background:
-    linear-gradient(135deg, #0f0f0f, #1a0005);
+  background: linear-gradient(135deg, #0f0f0f, #1a0005);
   color: white;
 }
 
@@ -164,7 +107,6 @@ const toggleEstado = async () => {
 
 .container {
   padding: 20px;
-  padding-top: 20px;
 }
 
 .form-box {
@@ -175,56 +117,13 @@ const toggleEstado = async () => {
   border: 1px solid #2d2d2d;
   border-radius: 24px;
   padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-label {
-  color: #ff2e63;
-  font-weight: bold;
-}
-
-input,
-textarea,
-select {
-  background: #111;
-  border: 1px solid #333;
-  color: white;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-textarea {
-  min-height: 100px;
-}
-
-.save-btn {
-  margin-top: 10px;
-  background: #ff2e63;
-  color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 14px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.state-btn {
-  background: #2c2c2c;
-  color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 14px;
-  cursor: pointer;
 }
 
 .delete-text {
-  margin-top: 10px;
+  margin-top: 16px;
   text-align: center;
   color: #ff4d4d;
   font-weight: bold;
   cursor: pointer;
 }
-
 </style>

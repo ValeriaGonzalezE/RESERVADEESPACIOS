@@ -1,7 +1,7 @@
 const model = require("../models/espacios.model");
 const db = require("../config/db");
 
-// Devuelve la lista de espacios aplicando los filtros enviados por query.
+// OBTENER TODOS LOS ESPACIOS
 exports.getEspacios = (req, res) => {
   model.getEspacios(req.query, (err, result) => {
     if (err) return res.status(500).json({ success: false });
@@ -9,7 +9,7 @@ exports.getEspacios = (req, res) => {
   });
 };
 
-// Obtiene un espacio especifico junto con su tipo y sus fotos registradas.
+// OBTENER UN ESPACIO POR ID
 exports.getEspacio = (req, res) => {
   const id = req.params.id;
 
@@ -36,8 +36,7 @@ exports.getEspacio = (req, res) => {
         (err2, fotos) => {
           if (err2) return res.status(500).json(err2);
 
-          espacio.fotos = fotos.map(f => f.url);
-
+          espacio.fotos = fotos.map((foto) => foto.url);
           res.json(espacio);
         }
       );
@@ -45,7 +44,7 @@ exports.getEspacio = (req, res) => {
   );
 };
 
-// Entrega al frontend las categorias disponibles de espacios.
+// OBTENER TIPOS DE ESPACIOS
 exports.getTipos = (req, res) => {
   model.getTipos((err, result) => {
     if (err) return res.status(500).json({ success: false });
@@ -53,13 +52,53 @@ exports.getTipos = (req, res) => {
   });
 };
 
-// Crea el espacio usando al usuario autenticado como propietario y guarda sus fotos.
+// CREAR ESPACIO
 exports.createEspacio = (req, res) => {
+  const nombre = req.body.nombre?.trim();
+  const tipo_id = req.body.tipo_id;
+  const capacidad = Number(req.body.capacidad);
+  const ubicacion = req.body.ubicacion?.trim();
+  const descripcion = req.body.descripcion?.trim() || "";
+  const requiere_pago = req.body.requiere_pago || "no";
+  const precio = Number(req.body.precio || 0);
+
+  // Validación de campos obligatorios
+  if (!nombre || !tipo_id || !ubicacion) {
+    return res.status(400).json({
+      success: false,
+      message: "Nombre, tipo y ubicacion son obligatorios"
+    });
+  }
+
+  // Validación de capacidad
+  if (!capacidad || capacidad <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "La capacidad debe ser mayor a 0"
+    });
+  }
+
+  // Validación de precio si es de pago
+  if (requiere_pago === "si" && precio < 0) {
+    return res.status(400).json({
+      success: false,
+      message: "El precio no puede ser negativo"
+    });
+  }
+
+  // Estructura final del espacio a guardar
   const data = {
-    ...req.body,
+    nombre,
+    tipo_id,
+    capacidad,
+    ubicacion,
+    descripcion,
+    requiere_pago,
+    precio,
     usuario_id: req.user.id
   };
 
+  // Inserción del espacio en la base de datos
   db.query(
     `INSERT INTO espacios 
     (nombre, tipo_id, capacidad, ubicacion, descripcion, requiere_pago, precio, usuario_id)
@@ -76,36 +115,31 @@ exports.createEspacio = (req, res) => {
     ],
     (err, result) => {
       if (err) {
-        console.error("ERROR ESPACIO:", err);
-        return res.status(500).json(err);
+        return res.status(500).json({ success: false, message: "No se pudo crear el espacio" });
       }
 
       const espacio_id = result.insertId;
 
-      // SI NO HAY FOTOS
+      // Si no hay imágenes, se termina aquí
       if (!req.files || req.files.length === 0) {
-        return res.json({ message: "Espacio creado sin fotos" });
+        return res.json({ success: true, message: "Espacio creado sin fotos" });
       }
 
-      // GUARDAR FOTOS
+      // Inserción de imágenes asociadas al espacio
       let guardadas = 0;
 
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         const url = `/uploads/${file.filename}`;
 
         db.query(
           "INSERT INTO espacio_fotos (espacio_id, url) VALUES (?, ?)",
           [espacio_id, url],
-          (err2) => {
-            if (err2) {
-              console.error("ERROR FOTO:", err2);
-            }
-
+          () => {
             guardadas++;
 
-            // cuando termine de guardar todas
             if (guardadas === req.files.length) {
               res.json({
+                success: true,
                 message: "Espacio creado con fotos",
                 fotos: guardadas
               });
@@ -117,7 +151,7 @@ exports.createEspacio = (req, res) => {
   );
 };
 
-// Retorna los espacios que pertenecen al usuario indicado.
+// OBTENER MIS ESPACIOS
 exports.getMisEspacios = (req, res) => {
   model.getMisEspacios(req.params.id, (err, result) => {
     if (err) return res.status(500).json({ success: false });
@@ -125,15 +159,46 @@ exports.getMisEspacios = (req, res) => {
   });
 };
 
-// Actualiza la informacion editable de un espacio.
+// ACTUALIZAR ESPACIO
 exports.updateEspacio = (req, res) => {
-  model.updateEspacio(req.params.id, req.body, (err) => {
-    if (err) return res.status(500).json({ success: false });
-    res.json({ success: true });
-  });
+  const nombre = req.body.nombre?.trim();
+  const capacidad = Number(req.body.capacidad);
+  const ubicacion = req.body.ubicacion?.trim();
+
+  if (!nombre || !ubicacion) {
+    return res.status(400).json({
+      success: false,
+      message: "Nombre y ubicacion son obligatorios"
+    });
+  }
+
+  if (!capacidad || capacidad <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "La capacidad debe ser mayor a 0"
+    });
+  }
+
+  model.updateEspacio(
+    req.params.id,
+    {
+      ...req.body,
+      nombre,
+      capacidad,
+      ubicacion,
+      descripcion: req.body.descripcion?.trim() || "",
+      requiere_pago: req.body.requiere_pago || "no",
+      precio: Number(req.body.precio || 0),
+      estado: req.body.estado || "activo"
+    },
+    (err) => {
+      if (err) return res.status(500).json({ success: false });
+      res.json({ success: true });
+    }
+  );
 };
 
-// Elimina un espacio cuando el usuario tiene permisos sobre el recurso.
+// ELIMINAR ESPACIO
 exports.deleteEspacio = (req, res) => {
   model.deleteEspacio(req.params.id, (err) => {
     if (err) return res.status(500).json({ success: false });
@@ -141,7 +206,7 @@ exports.deleteEspacio = (req, res) => {
   });
 };
 
-// Lista los comentarios asociados a un espacio.
+// OBTENER COMENTARIOS DE UN ESPACIO
 exports.getComentarios = (req, res) => {
   model.getComentarios(req.params.id, (err, result) => {
     if (err) return res.status(500).json(err);
@@ -149,15 +214,36 @@ exports.getComentarios = (req, res) => {
   });
 };
 
-// Crea un comentario tomando el usuario desde la sesion y no desde el body.
+// CREAR COMENTARIO
 exports.createComentario = (req, res) => {
-  const data = {
-    ...req.body,
-    usuario_id: req.user.id
-  };
+  const comentario = req.body.comentario?.trim();
+  const estrellas = Number(req.body.estrellas);
+  const espacio_id = req.body.espacio_id;
 
-  model.createComentario(data, (err, result) => {
-    if (err) return res.status(500).json(err);
-    res.json({ message: "Comentario creado" });
-  });
+  if (!espacio_id || !comentario) {
+    return res.status(400).json({
+      success: false,
+      message: "Espacio y comentario son obligatorios"
+    });
+  }
+
+  if (!estrellas || estrellas < 1 || estrellas > 5) {
+    return res.status(400).json({
+      success: false,
+      message: "Las estrellas deben estar entre 1 y 5"
+    });
+  }
+
+  model.createComentario(
+    {
+      espacio_id,
+      comentario,
+      estrellas,
+      usuario_id: req.user.id
+    },
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ success: true, message: "Comentario creado" });
+    }
+  );
 };

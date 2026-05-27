@@ -1,5 +1,6 @@
 const db = require("../config/db");
 
+// CREAR USUARIO
 exports.createUser = (data, callback) => {
   const { nombre, apellido, email, telefono, codigo, password } = data;
 
@@ -10,6 +11,7 @@ exports.createUser = (data, callback) => {
   );
 };
 
+// BUSCAR USUARIO (LOGIN / VALIDACIÓN)
 exports.findUser = (codigo, callback) => {
   db.query(
     "SELECT * FROM usuarios WHERE codigo = ? OR email = ?",
