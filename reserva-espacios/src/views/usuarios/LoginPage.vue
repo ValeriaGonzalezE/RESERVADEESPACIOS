@@ -1,58 +1,87 @@
 <template>
   <ion-page>
     <ion-content>
-
+      <!-- Layout principal de autenticacion para mantener la misma apariencia. -->
       <AuthLayout>
-
+        <!-- Columna izquierda del layout. -->
         <template #left>
           BIENVENIDO
         </template>
 
-        <h2>Iniciar Sesión</h2>
+        <!-- Encabezado principal de la vista. -->
+        <h2>Iniciar Sesion</h2>
         <br>
 
-        <AuthForm :fields="[
-          {
-            model: 'codigo',
-            label: 'Usuario (Correo)',
-            placeholder: 'ejemplo@gmail.com'
-          },
-          {
-            model: 'password',
-            label: 'Contraseña',
-            type: 'password',
-            placeholder: 'Ingresa tu contraseña'
-          }
-        ]" buttonText="Iniciar Sesión" @submit="login" />
-        <div class="links">
-          <router-link to="/register"> Crear cuenta</router-link>
-        </div>
+        <!-- Formulario declarativo de acceso. -->
+        <AuthForm
+          :fields="fields"
+          :external-errors="errors"
+          button-text="Iniciar Sesion"
+          @submit="login"
+        />
 
+        <!-- Acceso alterno hacia el registro. -->
+        <div class="links">
+          <router-link to="/register">Crear cuenta</router-link>
+        </div>
       </AuthLayout>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup>
+// Importaciones base de la vista de login.
+import { reactive } from "vue";
+import { IonContent, IonPage } from "@ionic/vue";
+import { useRouter } from "vue-router";
 import AuthLayout from "@/components/users/AuthLayout.vue";
 import AuthForm from "@/components/users/AuthForm.vue";
 import api from "@/services/api";
-import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/UserStore";
-import { IonPage, IonContent } from '@ionic/vue';
 
+// Router y store para navegar y guardar la sesion.
 const router = useRouter();
 const userStore = useUserStore();
 
-// Autentica al usuario, guarda la sesion y redirige al inicio si todo sale bien.
+// Configuracion declarativa de campos del formulario.
+const fields = [
+  {
+    model: "codigo",
+    label: "Usuario (Correo)",
+    placeholder: "ejemplo@gmail.com",
+    autoEmail: true
+  },
+  {
+    model: "password",
+    label: "Contrasena",
+    type: "password",
+    placeholder: "Ingresa tu contrasena"
+  }
+];
+
+// Errores del formulario para feedback rapido.
+const errors = reactive({
+  codigo: "",
+  password: ""
+});
+
+// Valida y envia el login al backend.
 const login = async (form) => {
+  errors.codigo = form.codigo?.trim() ? "" : "El correo es obligatorio";
+  errors.password = form.password ? "" : "La contrasena es obligatoria";
+
+  if (errors.codigo || errors.password) {
+    return;
+  }
+
   const res = await api.post("/login", form);
 
   if (res.data.success) {
     userStore.setUser(res.data.user, res.data.token);
     router.push("/home");
-  } else {
-    alert("Credenciales incorrectas");
+    return;
   }
+
+  alert(res.data.message || "Credenciales incorrectas");
 };
 </script>

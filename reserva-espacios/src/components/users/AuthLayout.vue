@@ -28,7 +28,7 @@
 .wrapper {
   display: flex;
   width: 900px;
-  max-height: 80vh;
+  max-height: 300vh;
   background: #1e1e1e;
   border-radius: 10px;
   overflow: hidden;
@@ -66,7 +66,7 @@
 }
 
 /* RESPONSIVE */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
 
   .wrapper {
     flex-direction: column;
@@ -75,12 +75,12 @@
   }
 
   .info-text {
-    min-height: 120px;
+    min-height: 200px;
     font-size: 24px;
   }
 
   .form-box {
-    max-height: calc(95vh - 120px);
+    max-height: 900px;
   }
 
 }

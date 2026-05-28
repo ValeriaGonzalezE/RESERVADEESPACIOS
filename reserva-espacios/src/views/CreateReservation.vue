@@ -1,32 +1,78 @@
+<template>
+  <ion-page>
+    <ion-content>
+      <!-- Fondo principal y boton de regreso. -->
+      <div class="page">
+        <BackButton class="back-floating" />
+
+        <div class="container">
+          <!-- Nombre del espacio seleccionado. -->
+          <h3 v-if="nombreEspacio">Espacio: {{ nombreEspacio }}</h3>
+
+          <!-- Resumen de quien esta creando la reserva. -->
+          <div class="user-info">
+            <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
+            <p><strong>Celular:</strong> {{ usuario.telefono }}</p>
+            <p><strong>Correo:</strong> {{ usuario.correo }}</p>
+          </div>
+
+          <!-- Formulario de reserva encapsulado. -->
+          <ReservationForm
+            v-model="reservaForm"
+            :horarios="horariosOcupados"
+            :errors="errors"
+          />
+
+          <!-- Accion principal de confirmacion. -->
+          <BaseButton @click="reservar">Reservar</BaseButton>
+        </div>
+      </div>
+    </ion-content>
+  </ion-page>
+</template>
+
 <script setup>
-import { ref, onMounted, watch } from "vue";
+// Importaciones necesarias para reservar un espacio.
+import { onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/stores/UserStore";
 import api from "@/services/api";
-
 import BackButton from "@/components/ui/BackButton.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import ReservationForm from "@/components/reservations/ReservationForm.vue";
 
+// Store, router y route para leer usuario y espacio actual.
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 
+// Estado de cabecera y disponibilidad del espacio.
 const espacioSeleccionado = ref(route.query.espacio || "");
 const nombreEspacio = ref("");
 const horariosOcupados = ref([]);
+
+// Datos informativos del usuario autenticado.
 const usuario = ref({
   nombre: "",
   telefono: "",
   correo: ""
 });
 
+// Formulario base de reserva.
 const reservaForm = ref({
   fecha: "",
   horaInicio: "",
   horaFin: ""
 });
 
+// Errores del formulario para validacion visual.
+const errors = reactive({
+  fecha: "",
+  horaInicio: "",
+  horaFin: ""
+});
+
+// Carga el espacio y precarga los datos del usuario.
 onMounted(async () => {
   const res = await api.get("/espacios");
   const espacio = res.data.find((item) => item.id == espacioSeleccionado.value);
@@ -39,6 +85,7 @@ onMounted(async () => {
   };
 });
 
+// Cada vez que cambia la fecha se consultan horarios ocupados.
 watch(
   () => reservaForm.value.fecha,
   (fecha) => {
@@ -50,6 +97,7 @@ watch(
   }
 );
 
+// Consulta al backend las reservas del dia para ese espacio.
 const cargarHorariosOcupados = async () => {
   const res = await api.get("/reservas/por-espacio", {
     params: {
@@ -61,11 +109,13 @@ const cargarHorariosOcupados = async () => {
   horariosOcupados.value = res.data;
 };
 
+// Convierte una hora tipo HH:mm en minutos.
 const toMinutos = (hora) => {
   const [h, m] = hora.split(":").map(Number);
   return h * 60 + m;
 };
 
+// Comprueba si el nuevo bloque cruza con una reserva existente.
 const hayCruce = () => {
   const inicio = toMinutos(reservaForm.value.horaInicio);
   const fin = toMinutos(reservaForm.value.horaFin);
@@ -77,19 +127,31 @@ const hayCruce = () => {
   });
 };
 
+// Valida el formulario antes de enviarlo.
+const validarReserva = () => {
+  const { fecha, horaInicio, horaFin } = reservaForm.value;
+
+  errors.fecha = fecha ? "" : "Selecciona una fecha";
+  errors.horaInicio = horaInicio ? "" : "Selecciona la hora inicial";
+  errors.horaFin = horaFin ? "" : "Selecciona la hora final";
+
+  if (!errors.horaInicio && !errors.horaFin && horaInicio >= horaFin) {
+    errors.horaFin = "La hora fin debe ser mayor que la hora inicio";
+  }
+
+  if (!errors.horaInicio && !errors.horaFin && !errors.fecha && hayCruce()) {
+    errors.horaFin = "Ese horario ya esta ocupado";
+  }
+
+  return !errors.fecha && !errors.horaInicio && !errors.horaFin;
+};
+
+// Crea la reserva en backend.
 const reservar = async () => {
   const { fecha, horaInicio, horaFin } = reservaForm.value;
 
-  if (!fecha || !horaInicio || !horaFin) {
-    return alert("Completa todos los campos");
-  }
-
-  if (horaInicio >= horaFin) {
-    return alert("La hora fin debe ser mayor que la hora inicio");
-  }
-
-  if (hayCruce()) {
-    return alert("Ese horario ya esta ocupado");
+  if (!validarReserva()) {
+    return;
   }
 
   const res = await api.post("/reservas", {
@@ -108,34 +170,8 @@ const reservar = async () => {
 };
 </script>
 
-<template>
-  <ion-page>
-    <ion-content>
-      <div class="page">
-        <BackButton class="back-floating" />
-
-        <div class="container">
-          <h3 v-if="nombreEspacio">Espacio: {{ nombreEspacio }}</h3>
-
-          <div class="user-info">
-            <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
-            <p><strong>Celular:</strong> {{ usuario.telefono }}</p>
-            <p><strong>Correo:</strong> {{ usuario.correo }}</p>
-          </div>
-
-          <ReservationForm
-            v-model="reservaForm"
-            :horarios="horariosOcupados"
-          />
-
-          <BaseButton @click="reservar">Reservar</BaseButton>
-        </div>
-      </div>
-    </ion-content>
-  </ion-page>
-</template>
-
 <style>
+/* Fondo general de la vista. */
 .page {
   min-height: 100vh;
   padding: 20px;
@@ -143,6 +179,7 @@ const reservar = async () => {
   color: white;
 }
 
+/* Caja principal de la reserva. */
 .container {
   margin-top: 30px;
   background: #1e1e1e;
@@ -151,6 +188,7 @@ const reservar = async () => {
   box-shadow: 0 0 25px rgba(255, 46, 98, 0.6);
 }
 
+/* Bloque con datos del usuario autenticado. */
 .user-info {
   background: #2323233d;
   padding: 15px;
@@ -162,6 +200,7 @@ const reservar = async () => {
   gap: 8px;
 }
 
+/* Posicion del boton de regreso. */
 .back-floating {
   position: absolute;
   top: 15px;

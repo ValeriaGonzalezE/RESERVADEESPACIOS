@@ -1,16 +1,52 @@
+<template>
+  <ion-page>
+    <ion-content>
+      <!-- Fondo general y boton de regreso. -->
+      <div class="page">
+        <BackButton class="back-floating" />
+
+        <div class="container">
+          <!-- Resumen de la reserva actual. -->
+          <div class="card">
+            <h3>Reserva actual</h3>
+            <p>{{ formatearFecha(reserva?.fecha) }}</p>
+            <p>{{ reserva?.hora_inicio || "-" }} - {{ reserva?.hora_fin || "-" }}</p>
+          </div>
+
+          <!-- Formulario de reprogramacion. -->
+          <div class="form">
+            <ReservationForm
+              v-model="reservaForm"
+              :horarios="horariosOcupados"
+              :errors="errors"
+              @update="cargarHorariosOcupados"
+            />
+
+            <BaseButton @click="guardar">Guardar cambios</BaseButton>
+
+            <p class="cancelar-texto" @click="cancelar">Cancelar reserva</p>
+          </div>
+        </div>
+      </div>
+    </ion-content>
+  </ion-page>
+</template>
+
 <script setup>
-import { ref, onMounted } from "vue";
+// Importaciones para reprogramar o cancelar una reserva.
+import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
-
 import BackButton from "@/components/ui/BackButton.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import ReservationForm from "@/components/reservations/ReservationForm.vue";
 
+// Datos de ruta y navegacion.
 const route = useRoute();
 const router = useRouter();
 const id = route.params.id;
 
+// Estado de la reserva actual y del formulario editable.
 const reserva = ref(null);
 const horariosOcupados = ref([]);
 const reservaForm = ref({
@@ -19,12 +55,21 @@ const reservaForm = ref({
   horaFin: ""
 });
 
+// Errores de frontend para apoyar la validacion.
+const errors = reactive({
+  fecha: "",
+  horaInicio: "",
+  horaFin: ""
+});
+
+// Convierte fechas a una salida amigable para la tarjeta superior.
 const formatearFecha = (fecha) => {
   if (!fecha) return "-";
   const value = new Date(fecha);
   return Number.isNaN(value.getTime()) ? "-" : value.toLocaleDateString("es-CO");
 };
 
+// Carga la reserva del usuario y prepara el formulario.
 onMounted(async () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const res = await api.get(`/reservas/mis-reservas/${user.id}`);
@@ -46,6 +91,7 @@ onMounted(async () => {
   await cargarHorariosOcupados();
 });
 
+// Consulta horarios ocupados del mismo espacio y fecha, excluyendo la reserva actual.
 const cargarHorariosOcupados = async () => {
   if (!reserva.value?.espacio_id || !reservaForm.value.fecha) {
     horariosOcupados.value = [];
@@ -62,15 +108,27 @@ const cargarHorariosOcupados = async () => {
   horariosOcupados.value = res.data.filter((item) => item.id !== Number(id));
 };
 
+// Valida los campos minimos del formulario.
+const validarReserva = () => {
+  const { fecha, horaInicio, horaFin } = reservaForm.value;
+
+  errors.fecha = fecha ? "" : "Selecciona una fecha";
+  errors.horaInicio = horaInicio ? "" : "Selecciona la hora inicial";
+  errors.horaFin = horaFin ? "" : "Selecciona la hora final";
+
+  if (!errors.horaInicio && !errors.horaFin && horaInicio >= horaFin) {
+    errors.horaFin = "La hora fin debe ser mayor";
+  }
+
+  return !errors.fecha && !errors.horaInicio && !errors.horaFin;
+};
+
+// Guarda la nueva fecha y rango horario.
 const guardar = async () => {
   const { fecha, horaInicio, horaFin } = reservaForm.value;
 
-  if (!fecha || !horaInicio || !horaFin) {
-    return alert("Completa todos los campos");
-  }
-
-  if (horaInicio >= horaFin) {
-    return alert("La hora fin debe ser mayor");
+  if (!validarReserva()) {
+    return;
   }
 
   const res = await api.put(`/reservas/${id}`, {
@@ -87,6 +145,7 @@ const guardar = async () => {
   router.back();
 };
 
+// Cancela la reserva luego de confirmacion.
 const cancelar = async () => {
   if (!confirm("Seguro que quieres cancelar la reserva?")) {
     return;
@@ -98,41 +157,8 @@ const cancelar = async () => {
 };
 </script>
 
-<template>
-  <ion-page>
-    <ion-content>
-      <div class="page">
-        <BackButton class="back-floating" />
-
-        <div class="container">
-          <div class="card">
-            <h3>Reserva actual</h3>
-            <p>{{ formatearFecha(reserva?.fecha) }}</p>
-            <p>{{ reserva?.hora_inicio || "-" }} - {{ reserva?.hora_fin || "-" }}</p>
-          </div>
-
-          <div class="form">
-            <ReservationForm
-              v-model="reservaForm"
-              :horarios="horariosOcupados"
-              @update="cargarHorariosOcupados"
-            />
-
-            <BaseButton @click="guardar">
-              Guardar cambios
-            </BaseButton>
-
-            <p class="cancelar-texto" @click="cancelar">
-              Cancelar reserva
-            </p>
-          </div>
-        </div>
-      </div>
-    </ion-content>
-  </ion-page>
-</template>
-
 <style scoped>
+/* Fondo general de la pantalla. */
 .page {
   min-height: 100vh;
   padding: 20px;
@@ -140,6 +166,7 @@ const cancelar = async () => {
   color: white;
 }
 
+/* Caja principal del contenido. */
 .container {
   margin-top: 30px;
   background: #1e1e1e;
@@ -148,6 +175,7 @@ const cancelar = async () => {
   box-shadow: 0 0 25px rgba(255, 46, 98, 0.6);
 }
 
+/* Tarjeta con la reserva vigente. */
 .card {
   background: #232323;
   padding: 20px;
@@ -156,11 +184,13 @@ const cancelar = async () => {
   border-left: 5px solid #ff2e63;
 }
 
+/* Columna para el formulario y acciones. */
 .form {
   display: flex;
   flex-direction: column;
 }
 
+/* Posicion del boton de regreso. */
 .back-floating {
   position: absolute;
   top: 15px;
@@ -168,6 +198,7 @@ const cancelar = async () => {
   z-index: 10;
 }
 
+/* Texto accionable para cancelar. */
 .cancelar-texto {
   margin-top: 10px;
   color: #ff2e63;

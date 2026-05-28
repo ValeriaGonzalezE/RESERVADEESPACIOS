@@ -1,141 +1,157 @@
 <template>
   <ion-content>
-
+    <!-- Layout principal compartido por las pantallas de autenticacion. -->
     <AuthLayout>
-
+      <!-- Columna visual izquierda. -->
       <template #left>
-        REGÍSTRATE
+        REGISTRATE
       </template>
-      <!-- if (condicionFrontendNoCumple) { return alert("mensaje"); } const res = await api.post("/ruta", datos); 
-       if (!res.data.success) { return alert(res.data.message); } alert("Proceso exitoso"); -->
 
-       
+      <!-- Encabezado y contexto de la pantalla. -->
       <h2 class="layout">Crear Cuenta</h2>
+      <p class="subtitle">Completa la informacion para crear tu cuenta</p>
 
-      <p class="subtitle">
-        Completa la información para crear tu cuenta
-      </p>
+      <!-- Formulario configurado por campos para mantener una estructura uniforme. -->
+      <AuthForm
+        :fields="fields"
+        :external-errors="errors"
+        button-text="Crear Cuenta"
+        @submit="register"
+      />
 
-      <AuthForm :fields="[
-        {
-          model: 'nombre',
-          label: 'Nombre',
-          placeholder: 'Ej: Valeria'
-        },
-        {
-          model: 'apellido',
-          label: 'Apellido',
-          placeholder: 'Ej: González'
-        },
-        {
-          model: 'email',
-          label: 'Correo electrónico',
-          placeholder: 'ejemplo@gmail.com'
-        },
-        {
-          model: 'telefono',
-          label: 'Número de celular',
-          type: 'tel',
-          placeholder: '3001234567'
-        },
-        {
-          model: 'password',
-          label: 'Contraseña',
-          type: 'password',
-          placeholder: 'Mínimo 8 caracteres'
-        },
-        {
-          model: 'confirmPassword',
-          label: 'Confirmar contraseña',
-          type: 'password',
-          placeholder: 'Repite tu contraseña'
-        }
-      ]" buttonText="Crear Cuenta" @submit="register" />
-
+      <!-- Enlace de regreso al login. -->
       <div class="links">
-        <router-link to="/login">
-          ¿Ya tienes cuenta? Inicia sesión
-        </router-link>
+        <router-link to="/login">Ya tienes cuenta? Inicia sesion</router-link>
       </div>
-
     </AuthLayout>
-
   </ion-content>
 </template>
 
 <script setup>
+// Importaciones principales de la vista.
+import { reactive } from "vue";
+import { useRouter } from "vue-router";
 import AuthLayout from "@/components/users/AuthLayout.vue";
 import AuthForm from "@/components/users/AuthForm.vue";
 import api from "@/services/api";
-import { useRouter } from "vue-router";
-import { onMounted } from "vue";
+import { isEmailValid, normalizeEmail } from "@/utils/formUtils";
 
+// Router para redirigir al usuario tras completar el registro.
 const router = useRouter();
 
-// Valida datos basicos del formulario antes de enviar el registro al backend.
+// Estructura declarativa del formulario.
+const fields = [
+  { 
+    model: "nombre", 
+    label: "Nombre", 
+    placeholder: "" 
+  },
+  { 
+    model: "apellido", 
+    label: "Apellido", 
+    placeholder: "" 
+  },
+  {
+    model: "email",
+    label: "Correo electronico",
+    placeholder: "ejemplo@gmail.com",
+    autoEmail: true
+  },
+  {
+    model: "telefono",
+    label: "Numero de celular",
+    type: "tel",
+    placeholder: ""
+  },
+  {
+    model: "password",
+    label: "Contrasena",
+    type: "password",
+    placeholder: "Minimo 8 caracteres"
+  },
+  {
+    model: "confirmPassword",
+    label: "Confirmar contrasena",
+    type: "password",
+    placeholder: "Repite tu contrasena"
+  }
+];
+
+// Mapa simple de errores por campo.
+const errors = reactive({
+  nombre: "",
+  apellido: "",
+  email: "",
+  telefono: "",
+  password: "",
+  confirmPassword: ""
+});
+
+// Ejecuta validaciones simples y registra al usuario.
 const register = async (form) => {
+  const payload = {
+    ...form,
+    email: normalizeEmail(form.email)
+  };
 
-  // VALIDAR CONTRASEÑAS
-  if (form.password !== form.confirmPassword) {
-    return alert("Las contraseñas no coinciden");
+  errors.nombre = payload.nombre?.trim() ? "" : "El nombre es obligatorio";
+  errors.email = payload.email?.trim() ? "" : "El correo es obligatorio";
+  errors.password = payload.password?.length >= 8 ? "" : "La contrasena debe tener minimo 8 caracteres";
+  errors.confirmPassword = payload.password === payload.confirmPassword ? "" : "Las contrasenas no coinciden";
+
+  if (!errors.email && !isEmailValid(payload.email)) {
+    errors.email = "Ingresa un correo valido";
   }
 
-  // AUTOCOMPLETAR GMAIL
-  if (
-    form.email &&
-    !form.email.includes("@")
-  ) {
-    form.email += "@gmail.com";
-  }
-  if (!form.nombre?.trim()) {
-    return alert("El nombre es obligatorio");
+  if (errors.nombre || errors.email || errors.password || errors.confirmPassword) {
+    return;
   }
 
-  if (!form.email?.trim()) {
-    return alert("El correo es obligatorio");
-  }
+  try {
+    const res = await api.post("/register", payload);
 
-  if (!form.password || form.password.length < 8) {
-    return alert("La contraseña debe tener mínimo 8 caracteres");
-  }
-
-    try {
-      // Envia la informacion del nuevo usuario al endpoint de registro.
-
-      const res = await api.post("/register", form);
-    
     if (res.data.success) {
       alert("Cuenta creada correctamente");
       router.push("/");
-    } else {
-      alert(res.data.message || "No se pudo crear la cuenta");
+      return;
     }
 
+    alert(res.data.message || "No se pudo crear la cuenta");
   } catch (error) {
-    alert("Ocurrió un error");
+    alert(error.response?.data?.message || "Ocurrio un error");
   }
 };
 </script>
 
 <style scoped>
+/* Ajuste visual del titulo dentro del layout actual. */
 .layout {
-  padding: 300px 30px 50px 30px;
+  padding: 400px 30px 30px 20px;
 }
 
+/* Texto secundario debajo del titulo. */
 .subtitle {
   color: #666;
   font-size: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
+/* Contenedor del enlace de ayuda. */
 .links {
   margin-top: 20px;
   text-align: center;
 }
 
+/* Estilo del enlace hacia login. */
 .links a {
   color: var(--ion-color-primary);
   font-weight: 600;
   text-decoration: none;
+}
+
+@media (max-width: 767px) {
+  .layout{
+    padding: 250px 50px 10px 5px;
+  }
 }
 </style>

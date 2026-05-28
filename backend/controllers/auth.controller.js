@@ -1,49 +1,53 @@
-// dependencias principales
-const bcrypt = require("bcrypt"); // encriptar
-const jwt = require("jsonwebtoken"); // tokens de autenticación
-const authModel = require("../models/auth.model"); // consultar la base de datos
-const asyncHandler = require("../utils/asyncHandler"); // Maneja errores
+// Dependencias principales del modulo de autenticacion.
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const authModel = require("../models/auth.model");
+const asyncHandler = require("../utils/asyncHandler");
+const {
+  cleanOptionalText,
+  cleanText,
+  isValidEmail,
+  normalizeEmail,
+  validationError
+} = require("../utils/requestValidators");
 
-// funcion para obtener secret del JWT
+// Toma el secreto del entorno y deja un fallback para desarrollo local.
 const getJwtSecret = () => process.env.JWT_SECRET || "clave_desarrollo_reservas";
 
-// REGISTRO DE USUARIOS
+// Registra un nuevo usuario validando datos
 exports.register = asyncHandler(async (req, res) => {
-  
-  // Obtener datos del body
-  const nombre = req.body.nombre?.trim();
-  const apellido = req.body.apellido?.trim() || "";
-  const email = req.body.email?.trim();
-  const telefono = req.body.telefono?.trim() || "";
+  const nombre = cleanText(req.body.nombre);
+  const apellido = cleanOptionalText(req.body.apellido);
+  const email = normalizeEmail(req.body.email);
+  const telefono = cleanOptionalText(req.body.telefono);
   const password = req.body.password || "";
 
-  // Validación de campos obligatorios
   if (!nombre || !email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: "Nombre, correo y contrasena son obligatorios"
+    return validationError(res, "Nombre, correo y contrasena son obligatorios", {
+      nombre: !nombre ? ["El nombre es obligatorio"] : undefined,
+      email: !email ? ["El correo es obligatorio"] : undefined,
+      password: !password ? ["La contrasena es obligatoria"] : undefined
     });
   }
 
-  // Validación mínima de contraseña
-  if (password.length < 4) {
-    return res.status(400).json({
-      success: false,
-      message: "La contrasena debe tener al menos 4 caracteres"
+  if (!isValidEmail(email)) {
+    return validationError(res, "Ingresa un correo valido", {
+      email: ["Correo invalido"]
     });
   }
 
-  // Si no tiene @, se asume gmail
-  const codigo = email.includes("@") ? email : `${email}@gmail.com`;
-  // Encriptación de contraseña
+  if (password.length < 8) {
+    return validationError(res, "La contrasena debe tener al menos 8 caracteres", {
+      password: ["Minimo 8 caracteres"]
+    });
+  }
+
+  const codigo = email;
   const hashed = await bcrypt.hash(password, 8);
 
-  // Creación del usuario en base de datos
   authModel.createUser(
     { nombre, apellido, email: codigo, telefono, codigo, password: hashed },
     (err) => {
-
-      // Manejo de errores de base de datos
       if (err) {
         const isDuplicate = err.code === "ER_DUP_ENTRY";
 
@@ -53,72 +57,63 @@ exports.register = asyncHandler(async (req, res) => {
         });
       }
 
-      // Registro exitoso
       res.json({ success: true });
     }
   );
 });
 
-// LOGIN DE USUARIOS
+// Inicia sesion usando correo normalizado y contrasena.
 exports.login = (req, res) => {
-
-  // Datos de entrada
-  const codigo = req.body.codigo?.trim();
+  const codigo = normalizeEmail(req.body.codigo);
   const password = req.body.password || "";
 
-  // Validación de campos
   if (!codigo || !password) {
-    return res.status(400).json({
-      success: false,
-      message: "Usuario y contrasena son obligatorios"
+    return validationError(res, "Usuario y contrasena son obligatorios", {
+      codigo: !codigo ? ["El usuario es obligatorio"] : undefined,
+      password: !password ? ["La contrasena es obligatoria"] : undefined
     });
   }
 
-  // Buscar usuario en la base de datos
   authModel.findUser(codigo, async (err, result) => {
-    
-    // Error en consulta
     if (err) {
       return res.status(500).json({ success: false, message: "Error al iniciar sesion" });
     }
 
-    // Usuario no encontrado
     if (result.length === 0) {
       return res.json({ success: false, message: "Credenciales incorrectas" });
     }
 
     const user = result[0];
-    // Comparar contraseña ingresada con la encriptada
     const valid = await bcrypt.compare(password, user.password);
 
-    // Contraseña incorrecta
     if (!valid) {
       return res.json({ success: false, message: "Credenciales incorrectas" });
     }
 
-    // Generación de token JWT
     const token = jwt.sign(
       { id: user.id, rol: user.rol },
       getJwtSecret(),
       { expiresIn: "8h" }
     );
 
-    // Eliminar password antes de enviar respuesta
     delete user.password;
-
-    // Login exitoso
     res.json({ success: true, token, user });
   });
 };
 
-//RECUPERACION DE CONTRASEÑA SIMULADA (NO IMPLEMETADO)
+// Simula recuperacion de contrasena y mantiene la puerta lista para implementacion real.
 exports.forgotPassword = (req, res) => {
-  const email = req.body.email?.trim();
+  const email = normalizeEmail(req.body.email);
 
   if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: "Ingresa un correo"
+    return validationError(res, "Ingresa un correo", {
+      email: ["El correo es obligatorio"]
+    });
+  }
+
+  if (!isValidEmail(email)) {
+    return validationError(res, "Ingresa un correo valido", {
+      email: ["Correo invalido"]
     });
   }
 
