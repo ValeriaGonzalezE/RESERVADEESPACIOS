@@ -152,7 +152,7 @@ const syncEspacio = (form) => {
 const validarEspacio = () => {
   errors.nombre = espacio.nombre?.trim() ? "" : "Ingresa el nombre del espacio";
   errors.tipo_id = espacio.tipo_id ? "" : "Selecciona el tipo de espacio";
-  errors.capacidad = Number(espacio.capacidad) > 0 ? "" : "La capacidad debe ser mayor a 0";
+  errors.capacidad = espacio.capacidad ? "" : "La capacidad es obligatoria";
   errors.ubicacion = espacio.ubicacion?.trim() ? "" : "Ingresa la ubicacion";
   errors.descripcion = espacio.descripcion?.trim() ? "":"añade una descripcion"
   errors.precio = espacio.requiere_pago === "si" && Number(espacio.precio) < 0
@@ -160,6 +160,9 @@ const validarEspacio = () => {
     : "";
   if (espacio.descripcion && (espacio.descripcion.length < 10 || espacio.descripcion.length > 50)){
     return alert("La descripcion debe tener entre 10 y 50 caracteres");
+  }
+  if (espacio.capacidad && (Number(espacio.capacidad)<10||Number(espacio.capacidad)>100)){
+    return alert("la capacidad debe ser entre 10 y 100");
   }
   return !errors.nombre && !errors.tipo_id && !errors.capacidad && !errors.ubicacion &&  !errors.descripcion && !errors.precio;
 };

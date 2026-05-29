@@ -100,6 +100,12 @@ exports.createEspacio = (req, res) => {
       message: "La descripcion debe ser mayor a 20 caracteres"
     });
   }
+  if (capacidad<20||capacidad>80){
+    return res.status(400).json({
+      success: false,
+      message: "la capacidad debe ser entre 20 y 80"
+    });
+  }
 
   const data = {
     nombre,
