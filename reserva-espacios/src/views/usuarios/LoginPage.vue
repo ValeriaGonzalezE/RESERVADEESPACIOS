@@ -13,12 +13,7 @@
         <br>
 
         <!-- Formulario declarativo de acceso. -->
-        <AuthForm
-          :fields="fields"
-          :external-errors="errors"
-          button-text="Iniciar Sesion"
-          @submit="login"
-        />
+        <AuthForm :fields="fields" :external-errors="errors" button-text="Iniciar Sesion" @submit="login" />
 
         <!-- Acceso alterno hacia el registro. -->
         <div class="links">
@@ -56,13 +51,13 @@ const fields = [
     label: "Contrasena",
     type: "password",
     placeholder: "Ingresa tu contrasena"
-  }
+  },
 ];
 
 // Errores del formulario para feedback rapido.
 const errors = reactive({
   codigo: "",
-  password: ""
+  password: "",
 });
 
 // Valida y envia el login al backend.
@@ -74,14 +69,18 @@ const login = async (form) => {
     return;
   }
 
-  const res = await api.post("/login", form);
+  try {
+    const res = await api.post("/login", form);
 
-  if (res.data.success) {
-    userStore.setUser(res.data.user, res.data.token);
-    router.push("/home");
-    return;
+    if (res.data.success) {
+      userStore.setUser(res.data.user, res.data.token);
+      router.push("/home");
+      return;
+    }
+
+    alert(res.data.message || "Credenciales incorrectas");
+  } catch (error) {
+    alert(error.response?.data?.message || "Ocurrio un error");
   }
-
-  alert(res.data.message || "Credenciales incorrectas");
 };
 </script>

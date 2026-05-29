@@ -37,6 +37,7 @@ import api from "@/services/api";
 import { isEmailValid, normalizeEmail } from "@/utils/formUtils";
 
 // Router para redirigir al usuario tras completar el registro.
+// const fecha = new Date(form.fecha);
 const router = useRouter();
 
 // Estructura declarativa del formulario.
@@ -74,7 +75,7 @@ const fields = [
     label: "Confirmar contrasena",
     type: "password",
     placeholder: "Repite tu contrasena"
-  }
+  },
 ];
 
 // Mapa simple de errores por campo.
@@ -84,7 +85,7 @@ const errors = reactive({
   email: "",
   telefono: "",
   password: "",
-  confirmPassword: ""
+  confirmPassword: "",
 });
 
 // Ejecuta validaciones simples y registra al usuario.

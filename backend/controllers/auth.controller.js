@@ -1,3 +1,4 @@
+//const fecha = new Date(req.body.fecha);
 // Dependencias principales del modulo de autenticacion.
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
