@@ -209,6 +209,10 @@ button:hover {
   height: 100vh;
 }
 
+select option {
+  background: black;
+  color: white;
+}
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .wrapper {

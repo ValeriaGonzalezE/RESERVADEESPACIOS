@@ -23,7 +23,7 @@
           <!-- Formulario del espacio encapsulado en componente. -->
           <SpaceForm
             :espacio="espacio"
-            :tipos="tipos"
+            :fields="fields"
             :errors="errors"
             @update:espacio="syncEspacio"
             @guardar="crear"
@@ -36,7 +36,7 @@
 
 <script setup>
 // Importaciones principales para crear espacios.
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/services/api";
 import SpaceForm from "@/components/espacios/SpaceForm.vue";
@@ -69,6 +69,67 @@ const errors = reactive({
   descripcion: "",
   requiere_pago: "",
   precio: ""
+});
+
+// Campos del formulario. Para agregar un input nuevo, se agrega aqui y luego en errors/validacion.
+const fields = computed(() => {
+  const baseFields = [
+    {
+      model: "nombre",
+      label: "Nombre",
+      placeholder: "Ej: Salon principal"
+    },
+    {
+      model: "tipo_id",
+      label: "Tipo",
+      type: "select",
+      disabledOption: "Selecciona",
+      options: tipos.value.map((tipo) => ({
+        value: String(tipo.id),
+        label: tipo.nombre
+      }))
+    },
+    {
+      model: "capacidad",
+      label: "Capacidad",
+      type: "number",
+      min: "1",
+      placeholder: "Ej: 30"
+    },
+    {
+      model: "ubicacion",
+      label: "Ubicacion",
+      placeholder: "Ej: Calle 1 #1A-1, barrio"
+    },
+    {
+      model: "descripcion",
+      label: "Descripcion",
+      type: "textarea",
+      placeholder: "Describe el espacio"
+    },
+    {
+      model: "requiere_pago",
+      label: "Requiere pago",
+      type: "select",
+      disabledOption: "Selecciona",
+      options: [
+        { value: "no", label: "Gratis" },
+        { value: "si", label: "De pago" }
+      ]
+    }
+  ];
+
+  if (espacio.requiere_pago === "si") {
+    baseFields.push({
+      model: "precio",
+      label: "Precio",
+      type: "number",
+      min: "0",
+      placeholder: "Ej: 50000"
+    });
+  }
+
+  return baseFields;
 });
 
 // Carga los tipos de espacio al iniciar la vista.

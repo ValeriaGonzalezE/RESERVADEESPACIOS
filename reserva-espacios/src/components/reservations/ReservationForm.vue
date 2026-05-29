@@ -45,6 +45,26 @@ const props = defineProps({
   errors: {
     type: Object,
     default: () => ({})
+  },
+  fields: {
+    type: Array,
+    default: () => [
+      {
+        model: "fecha",
+        label: "Fecha",
+        type: "date"
+      },
+      {
+        model: "horaInicio",
+        label: "Hora inicio",
+        type: "time"
+      },
+      {
+        model: "horaFin",
+        label: "Hora fin",
+        type: "time"
+      }
+    ]
   }
 });
 
@@ -59,23 +79,7 @@ const localForm = reactive({
 });
 
 // Definicion uniforme de campos para fecha y horas.
-const fields = computed(() => [
-  {
-    model: "fecha",
-    label: "Fecha",
-    type: "date"
-  },
-  {
-    model: "horaInicio",
-    label: "Hora inicio",
-    type: "time"
-  },
-  {
-    model: "horaFin",
-    label: "Hora fin",
-    type: "time"
-  }
-]);
+const fields = computed(() => props.fields);
 
 // Emite el estado actual hacia la vista padre.
 const emitCambio = () => {
@@ -86,18 +90,18 @@ const emitCambio = () => {
 
 // Sincroniza cambios escritos en el formulario base.
 const syncForm = (form) => {
-  localForm.fecha = form.fecha || "";
-  localForm.horaInicio = form.horaInicio || "";
-  localForm.horaFin = form.horaFin || "";
+  Object.keys(form).forEach((key) => {
+    localForm[key] = form[key] || "";
+  });
 };
 
 // Actualiza el estado local cuando el padre modifica el modelo.
 watch(
   () => props.modelValue,
   (value) => {
-    localForm.fecha = value?.fecha || "";
-    localForm.horaInicio = value?.horaInicio || "";
-    localForm.horaFin = value?.horaFin || "";
+    props.fields.forEach((field) => {
+      localForm[field.model] = value?.[field.model] || "";
+    });
   },
   { deep: true }
 );

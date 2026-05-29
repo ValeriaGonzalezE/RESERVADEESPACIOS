@@ -17,6 +17,7 @@
           <div class="form">
             <ReservationForm
               v-model="reservaForm"
+              :fields="fields"
               :horarios="horariosOcupados"
               :errors="errors"
               @update="cargarHorariosOcupados"
@@ -54,6 +55,25 @@ const reservaForm = ref({
   horaInicio: "",
   horaFin: ""
 });
+
+// Campos del formulario. Para agregar otro input, se agrega aqui y luego en errors/validarReserva.
+const fields = [
+  {
+    model: "fecha",
+    label: "Fecha",
+    type: "date"
+  },
+  {
+    model: "horaInicio",
+    label: "Hora inicio",
+    type: "time"
+  },
+  {
+    model: "horaFin",
+    label: "Hora fin",
+    type: "time"
+  }
+];
 
 // Errores de frontend para apoyar la validacion.
 const errors = reactive({

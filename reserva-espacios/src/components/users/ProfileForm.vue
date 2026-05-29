@@ -37,15 +37,23 @@
 import { reactive, ref, watch } from "vue";
 import AuthForm from "./AuthForm.vue";
 import BaseInput from "../ui/BaseInput.vue";
-import { isEmailValid, normalizeEmail } from "@/utils/formUtils";
+import { normalizeEmail } from "@/utils/formUtils";
 
 // Usuario actual recibido desde la vista.
 const props = defineProps({
-  user: Object
+  user: Object,
+  fields: {
+    type: Array,
+    default: () => []
+  },
+  errors: {
+    type: Object,
+    default: () => ({})
+  }
 });
 
 // Evento que sube el FormData listo para enviar.
-const emit = defineEmits(["submit"]);
+const emit = defineEmits(["submit", "update"]);
 
 // Imagen de respaldo para usuarios sin foto.
 const defaultImg =
@@ -60,30 +68,6 @@ const form = reactive({
   password: "",
   fotoFile: null
 });
-
-// Errores simples para hacer mas clara la validacion del frontend.
-const errors = reactive({
-  nombre: "",
-  apellido: "",
-  email: "",
-  telefono: "",
-  password: "",
-  foto: ""
-});
-
-// Configuracion de los campos que renderiza AuthForm.
-const fields = [
-  { model: "nombre", label: "Nombre", placeholder: "Ingresa tu nombre" },
-  { model: "apellido", label: "Apellido", placeholder: "Ingresa tu apellido" },
-  { model: "email", label: "Email", placeholder: "ejemplo@gmail.com", autoEmail: true },
-  { model: "telefono", label: "Telefono", type: "tel", placeholder: "3001234567" },
-  {
-    model: "password",
-    label: "Nueva contrasena",
-    type: "password",
-    placeholder: "Opcional"
-  }
-];
 
 // Cuando cambia la URL de foto se mantiene el preview visible.
 watch(() => form.foto, (value) => {
@@ -107,6 +91,7 @@ const seleccionarFoto = (event) => {
 // Sincroniza cambios emitidos desde AuthForm.
 const syncForm = (values) => {
   Object.assign(form, values);
+  emit("update", { ...form });
 };
 
 // Valida campos al salir de cada input para darle feedback rapido al usuario.
@@ -116,45 +101,9 @@ const handleBlur = ({ field, form: currentForm }) => {
   }
 };
 
-// Valida el formulario antes de crear el FormData final.
-const validar = () => {
-  errors.nombre = form.nombre?.trim() ? "" : "El nombre es obligatorio";
-  errors.email = form.email?.trim() ? "" : "El correo es obligatorio";
-
-  if (!errors.email && !isEmailValid(form.email)) {
-    errors.email = "Ingresa un correo valido";
-  }
-
-  if (form.password && form.password.length < 8) {
-    errors.password = "La contrasena debe tener minimo 8 caracteres";
-  } else {
-    errors.password = "";
-  }
-
-  return !errors.nombre && !errors.email && !errors.password;
-};
-
-// Empaqueta los datos del perfil para mantener el upload actual.
+// Entrega el estado editable para que la vista valide como en login y registro.
 const guardar = () => {
-  if (!validar()) {
-    return;
-  }
-
-  const data = new FormData();
-
-  data.append("nombre", form.nombre || "");
-  data.append("apellido", form.apellido || "");
-  data.append("email", normalizeEmail(form.email || ""));
-  data.append("telefono", form.telefono || "");
-  data.append("password", form.password || "");
-
-  if (form.fotoFile) {
-    data.append("foto", form.fotoFile);
-  } else {
-    data.append("foto", form.foto || "");
-  }
-
-  emit("submit", data);
+  emit("submit", { ...form });
 };
 </script>
 
@@ -168,6 +117,7 @@ const guardar = () => {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 100%;
 }
 
 /* Zona visual de la foto, input de archivo y url externa. */

@@ -107,7 +107,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: "space-reservations/:id",
         component: SpaceReservations,
-        meta: { title: "RESERVAR ESPACIO" }
+        meta: { title: "VER ESPACIO Y RESERVAS CREADAS" }
       },
 
       {

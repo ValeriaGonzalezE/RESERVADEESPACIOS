@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { reactive, ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
 
 import BackButton from "@/components/ui/BackButton.vue";
+import AuthForm from "@/components/users/AuthForm.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -11,7 +12,25 @@ const router = useRouter();
 const espacio = ref(null);
 const comentarios = ref([]);
 
-const nuevoComentario = ref("");
+const form = reactive({
+  comentario: ""
+});
+
+// Campos del formulario. Para agregar un input nuevo, se agrega aqui y luego en errors/enviarComentario.
+const fields = [
+  {
+    model: "comentario",
+    label: "Comentario",
+    type: "textarea",
+    placeholder: "Escribe tu comentario..."
+  }
+];
+
+// Errores visibles dentro del mismo formulario.
+const errors = reactive({
+  comentario: ""
+});
+
 const estrellas = ref(0);
 const hover = ref(0);
 
@@ -86,17 +105,29 @@ const cargarComentarios = async () => {
   comentarios.value = res.data;
 };
 
-const enviarComentario = async () => {
+const syncForm = (values) => {
+  Object.assign(form, values);
+};
+
+const enviarComentario = async (payload) => {
+  Object.assign(form, payload);
+
+  errors.comentario = form.comentario?.trim() ? "" : "El comentario es obligatorio";
+
+  if (errors.comentario) {
+    return;
+  }
+
   if (!estrellas.value) return alert("Selecciona estrellas");
 
   await api.post("/espacios/comentarios", {
     espacio_id: espacio.value.id,
     usuario_id: 1,
-    comentario: nuevoComentario.value,
+    comentario: form.comentario,
     estrellas: estrellas.value
   });
 
-  nuevoComentario.value = "";
+  form.comentario = "";
   estrellas.value = 0;
 
   cargarComentarios();
@@ -219,9 +250,14 @@ const distribucion = computed(() => {
             </span>
           </div>
 
-          <textarea v-model="nuevoComentario" placeholder="Escribe tu comentario..."></textarea>
-
-          <button @click="enviarComentario">Enviar</button>
+          <AuthForm
+            :fields="fields"
+            :initial-values="form"
+            :external-errors="errors"
+            button-text="Enviar"
+            @update="syncForm"
+            @submit="enviarComentario"
+          />
 
           <h3>Opiniones</h3>
 
