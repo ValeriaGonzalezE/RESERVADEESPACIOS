@@ -154,11 +154,14 @@ const validarEspacio = () => {
   errors.tipo_id = espacio.tipo_id ? "" : "Selecciona el tipo de espacio";
   errors.capacidad = Number(espacio.capacidad) > 0 ? "" : "La capacidad debe ser mayor a 0";
   errors.ubicacion = espacio.ubicacion?.trim() ? "" : "Ingresa la ubicacion";
+  errors.descripcion = espacio.descripcion?.trim() ? "":"añade una descripcion"
   errors.precio = espacio.requiere_pago === "si" && Number(espacio.precio) < 0
     ? "El precio no puede ser negativo"
     : "";
-
-  return !errors.nombre && !errors.tipo_id && !errors.capacidad && !errors.ubicacion && !errors.precio;
+  if (espacio.descripcion && (espacio.descripcion.length < 10 || espacio.descripcion.length > 50)){
+    return alert("La descripcion debe tener entre 10 y 50 caracteres");
+  }
+  return !errors.nombre && !errors.tipo_id && !errors.capacidad && !errors.ubicacion &&  !errors.descripcion && !errors.precio;
 };
 
 // Crea el espacio y sube las imagenes seleccionadas.
@@ -176,10 +179,13 @@ const crear = async () => {
   fotos.value.forEach((foto) => {
     formData.append("fotos", foto);
   });
-
-  await api.post("/espacios", formData);
-  alert("Espacio creado");
-  router.push("/my-spaces");
+  try{
+    await api.post("/espacios", formData);
+    alert("Espacio creado");
+    router.push("/my-spaces");
+  }catch (err){
+    alert(err.response?.data?.message || "Error del servidor");
+  }
 };
 
 // Agrega archivos nuevos evitando duplicados y limite mayor a 5.

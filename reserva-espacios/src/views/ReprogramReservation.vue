@@ -53,7 +53,8 @@ const horariosOcupados = ref([]);
 const reservaForm = ref({
   fecha: "",
   horaInicio: "",
-  horaFin: ""
+  horaFin: "",
+  text: "" || undefined
 });
 
 // Campos del formulario. Para agregar otro input, se agrega aqui y luego en errors/validarReserva.
@@ -72,6 +73,11 @@ const fields = [
     model: "horaFin",
     label: "Hora fin",
     type: "time"
+  },
+  {
+    model: "text",
+    label: "Motivo",
+    type: "textarea"
   }
 ];
 
@@ -79,7 +85,8 @@ const fields = [
 const errors = reactive({
   fecha: "",
   horaInicio: "",
-  horaFin: ""
+  horaFin: "",
+  text: ""
 });
 
 // Convierte fechas a una salida amigable para la tarjeta superior.
@@ -130,14 +137,17 @@ const cargarHorariosOcupados = async () => {
 
 // Valida los campos minimos del formulario.
 const validarReserva = () => {
-  const { fecha, horaInicio, horaFin } = reservaForm.value;
+  const { fecha, horaInicio, horaFin, text } = reservaForm.value;
 
   errors.fecha = fecha ? "" : "Selecciona una fecha";
   errors.horaInicio = horaInicio ? "" : "Selecciona la hora inicial";
   errors.horaFin = horaFin ? "" : "Selecciona la hora final";
-
+  errors.text = text ? "": "obligatorio";
   if (!errors.horaInicio && !errors.horaFin && horaInicio >= horaFin) {
     errors.horaFin = "La hora fin debe ser mayor";
+  }
+  if (text && (text.length < 10 || text.length > 100)){
+    return alert ("entre 10 a 100 caracteres");
   }
 
   return !errors.fecha && !errors.horaInicio && !errors.horaFin;
@@ -145,24 +155,28 @@ const validarReserva = () => {
 
 // Guarda la nueva fecha y rango horario.
 const guardar = async () => {
-  const { fecha, horaInicio, horaFin } = reservaForm.value;
-
+  const { fecha, horaInicio, horaFin, text } = reservaForm.value;
+  
   if (!validarReserva()) {
     return;
   }
+  try{
+    const res = await api.put(`/reservas/${id}`, {
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      text: text
+    });
 
-  const res = await api.put(`/reservas/${id}`, {
-    fecha,
-    hora_inicio: horaInicio,
-    hora_fin: horaFin
-  });
+    if (!res.data.success) {
+      return alert(res.data.message || "No se pudo actualizar");
+    }
 
-  if (!res.data.success) {
-    return alert(res.data.message || "No se pudo actualizar");
+    alert("Reserva reprogramada");
+    router.back();
+  }catch (err) {
+    alert(err.response?.data?.message || "Error del servidor");
   }
-
-  alert("Reserva reprogramada");
-  router.back();
 };
 
 // Cancela la reserva luego de confirmacion.

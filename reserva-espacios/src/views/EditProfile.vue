@@ -51,7 +51,7 @@ const fields = [
     label: "Nueva contrasena",
     type: "password",
     placeholder: "Opcional"
-  }
+  },
 ];
 
 // Errores visibles dentro del mismo formulario.
@@ -61,7 +61,7 @@ const errors = reactive({
   email: "",
   telefono: "",
   password: "",
-  foto: ""
+  foto: "",
 });
 
 const syncForm = (values) => {

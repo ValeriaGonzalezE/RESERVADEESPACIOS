@@ -1,4 +1,5 @@
 // Controlador principal de espacios y comentarios.
+// filtrar con texto const text = req.query.text || ""; if(text && text.length < 15){ return res.status(400).json({ success: false, message: "de 15 a 20 caracteres" }); }
 const model = require("../models/espacios.model");
 const db = require("../config/db");
 const {
@@ -12,7 +13,9 @@ const {
 // Devuelve todos los espacios con los filtros enviados por query.
 exports.getEspacios = (req, res) => {
   model.getEspacios(req.query, (err, result) => {
-    if (err) return res.status(500).json({ success: false });
+    if (err) {
+      return res.status(500).json({ success: false });
+    } 
     res.json(result);
   });
 };
@@ -91,6 +94,13 @@ exports.createEspacio = (req, res) => {
     });
   }
 
+  if (descripcion.length < 20){
+    return res.status(400).json({
+      success: false,
+      message: "La descripcion debe ser mayor a 20 caracteres"
+    });
+  }
+
   const data = {
     nombre,
     tipo_id,
@@ -166,6 +176,7 @@ exports.updateEspacio = (req, res) => {
   const tipo_id = toPositiveInteger(req.body.tipo_id);
   const capacidad = toPositiveInteger(req.body.capacidad);
   const ubicacion = cleanText(req.body.ubicacion);
+  const descripcion = req.body.descripcion;
   const precio = toNonNegativeNumber(req.body.precio || 0);
 
   if (!nombre || !ubicacion) {
@@ -190,6 +201,13 @@ exports.updateEspacio = (req, res) => {
   if (req.body.requiere_pago === "si" && precio === null) {
     return validationError(res, "El precio no puede ser negativo", {
       precio: ["Precio invalido"]
+    });
+  }
+
+  if (descripcion.length < 20){
+    return res.status(400).json({
+      success: false,
+      message: "La descripcion debe ser mayor a 20 caracteres"
     });
   }
 

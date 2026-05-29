@@ -161,11 +161,14 @@ const validarEspacio = () => {
   errors.tipo_id = espacio.tipo_id ? "" : "Selecciona el tipo de espacio";
   errors.capacidad = Number(espacio.capacidad) > 0 ? "" : "La capacidad debe ser mayor a 0";
   errors.ubicacion = espacio.ubicacion?.trim() ? "" : "Ingresa la ubicacion";
+  errors.descripcion = espacio.descripcion?.trim() ? "" : "Añade una descripcion";
   errors.precio = espacio.requiere_pago === "si" && Number(espacio.precio) < 0
     ? "El precio no puede ser negativo"
     : "";
-
-  return !errors.nombre && !errors.tipo_id && !errors.capacidad && !errors.ubicacion && !errors.precio;
+  if ( espacio.descripcion?.trim() && (espacio.descripcion.length < 10 || espacio.descripcion.length > 50)) {
+    return alert("La descripcion debe tener entre 10 y 50 caracteres");
+  }
+  return !errors.nombre && !errors.tipo_id && !errors.capacidad && !errors.ubicacion && !errors.descripcion && !errors.precio;
 };
 
 // Guarda los cambios del espacio.
@@ -173,9 +176,12 @@ const guardar = async () => {
   if (!validarEspacio()) {
     return;
   }
-
-  await api.put(`/espacios/${route.params.id}`, { ...espacio });
-  alert("Espacio actualizado");
+  try{
+    await api.put(`/espacios/${route.params.id}`, { ...espacio });
+    alert("Espacio actualizado");
+  } catch (err) {
+    alert(err.response?.data?.message || "Error del servidor");
+  }
 };
 
 // Elimina el espacio despues de confirmacion.

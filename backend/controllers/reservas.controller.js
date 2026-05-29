@@ -113,6 +113,7 @@ exports.updateReserva = (req, res) => {
   const fecha = req.body.fecha;
   const hora_inicio = req.body.hora_inicio;
   const hora_fin = req.body.hora_fin;
+  const text = req.body.text;
 
   if (!fecha || !hora_inicio || !hora_fin) {
     return validationError(res, "Completa todos los campos", {
@@ -133,6 +134,13 @@ exports.updateReserva = (req, res) => {
   if (hora_inicio >= hora_fin) {
     return validationError(res, "La hora fin debe ser mayor que la hora inicio", {
       hora_fin: ["La hora final debe ser posterior a la inicial"]
+    });
+  }
+
+  if(text.length < 50){
+    return res.status(400).json({
+      success: false,
+      message: "50 a 100 caracteres"
     });
   }
 

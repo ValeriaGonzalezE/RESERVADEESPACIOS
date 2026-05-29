@@ -13,9 +13,9 @@ const espacio = ref(null);
 const comentarios = ref([]);
 
 const form = reactive({
-  comentario: ""
+  comentario: "",
 });
-
+// en comentarios debo llenar el form, el fields, errors, enviarcomentarios junto con try y no se si cargarcomentarios(creo que no)
 // Campos del formulario. Para agregar un input nuevo, se agrega aqui y luego en errors/enviarComentario.
 const fields = [
   {
@@ -23,12 +23,12 @@ const fields = [
     label: "Comentario",
     type: "textarea",
     placeholder: "Escribe tu comentario..."
-  }
+  },
 ];
 
 // Errores visibles dentro del mismo formulario.
 const errors = reactive({
-  comentario: ""
+  comentario: "",
 });
 
 const estrellas = ref(0);
@@ -120,18 +120,24 @@ const enviarComentario = async (payload) => {
 
   if (!estrellas.value) return alert("Selecciona estrellas");
 
-  await api.post("/espacios/comentarios", {
-    espacio_id: espacio.value.id,
-    usuario_id: 1,
-    comentario: form.comentario,
-    estrellas: estrellas.value
-  });
+  try {
+    await api.post("/espacios/comentarios", {
+      espacio_id: espacio.value.id,
+      usuario_id: 1,
+      comentario: form.comentario,
+      estrellas: estrellas.value,
+    });
 
-  form.comentario = "";
-  estrellas.value = 0;
+    form.comentario = "";
+    estrellas.value = 0;
 
-  cargarComentarios();
+    cargarComentarios();
+  } catch (error) {
+      alert(error.response?.data?.message || "Ocurrio un error");
+      console.error(error);
+  }
 };
+
 
 // PROMEDIO
 

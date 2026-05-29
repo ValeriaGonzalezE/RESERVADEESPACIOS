@@ -63,7 +63,7 @@ const usuario = ref({
 const reservaForm = ref({
   fecha: "",
   horaInicio: "",
-  horaFin: ""
+  horaFin: "",
 });
 
 // Campos del formulario. Para agregar otro input, se agrega aqui y luego en errors/validarReserva.
@@ -82,14 +82,14 @@ const fields = [
     model: "horaFin",
     label: "Hora fin",
     type: "time"
-  }
+  },
 ];
 
 // Errores del formulario para validacion visual.
 const errors = reactive({
   fecha: "",
   horaInicio: "",
-  horaFin: ""
+  horaFin: "",
 });
 
 // Carga el espacio y precarga los datos del usuario.
@@ -150,7 +150,8 @@ const hayCruce = () => {
 // Valida el formulario antes de enviarlo.
 const validarReserva = () => {
   const { fecha, horaInicio, horaFin } = reservaForm.value;
-
+  
+// no hay que declarar en condicional reservaForm, porque ya utilizo value
   errors.fecha = fecha ? "" : "Selecciona una fecha";
   errors.horaInicio = horaInicio ? "" : "Selecciona la hora inicial";
   errors.horaFin = horaFin ? "" : "Selecciona la hora final";
@@ -173,21 +174,23 @@ const reservar = async () => {
   if (!validarReserva()) {
     return;
   }
+  try {
+    const res = await api.post("/reservas", {
+      espacio_id: espacioSeleccionado.value,
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+    });
+    if (!res.data.success) {
+      return alert(res.data.message || "No se pudo crear la reserva");
+    }
 
-  const res = await api.post("/reservas", {
-    espacio_id: espacioSeleccionado.value,
-    fecha,
-    hora_inicio: horaInicio,
-    hora_fin: horaFin
-  });
-
-  if (!res.data.success) {
-    return alert(res.data.message || "No se pudo crear la reserva");
-  }
-
-  alert("Reserva creada");
-  router.back();
-};
+    alert("Reserva creada");
+    router.back();
+    } catch (err) {
+    alert(err.response?.data?.message || "Error del servidor");
+    }
+  };
 </script>
 
 <style>

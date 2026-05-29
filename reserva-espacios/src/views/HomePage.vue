@@ -45,20 +45,22 @@
 <script setup>
 import { IonPage, IonContent, useIonRouter } from "@ionic/vue";
 import { computed, reactive, ref, onMounted, onActivated } from "vue";
+import { useUserStore } from "@/stores/UserStore";
 import api from "@/services/api";
 import AuthForm from "@/components/users/AuthForm.vue";
 import SpaceCard from "@/components/espacios/SpaceCard.vue";
 
 const ionRouter = useIonRouter();
+const userStore = useUserStore();
 
 const tipos = ref([]);
 const form = reactive({
   fecha: new Date().toISOString().split("T")[0],
   tipo: "",
-  pago: ""
+  pago: "",
 });
 
-// Campos del filtro. Para agregar un input nuevo, se agrega aqui y luego en errors/filtrar.
+// Campos del filtro. 
 const fields = computed(() => [
   {
     model: "fecha",
@@ -84,13 +86,13 @@ const fields = computed(() => [
       { value: "si", label: "De pago" },
       { value: "no", label: "Gratis" }
     ]
-  }
+  },
 ]);
 
 const errors = reactive({
   fecha: "",
   tipo: "",
-  pago: ""
+  pago: "",
 });
 
 const salones = ref([]);
@@ -105,16 +107,17 @@ const obtenerEspacios = async () => {
       params: {
         fecha: form.fecha || undefined,
         tipo: form.tipo || null,
-        pago: form.pago || null
+        pago: form.pago || null,
       }
     });
 
     salones.value = res.data;
   } catch (err) {
+    alert(err.response?.data?.message || "Ocurrio un error");
     console.error("Error cargando espacios", err);
   }
 };
-
+//filtrar con errors obligatorio, condicional obligatorio y condicional validador, llenar los demas datos
 const filtrar = async (payload) => {
   Object.assign(form, payload);
 
