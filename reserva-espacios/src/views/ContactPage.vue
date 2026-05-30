@@ -4,7 +4,7 @@
       <div class="contact-page">
         <section class="contact-box">
           <h3>Contacto</h3>
-          <p>Formulario simple para practicar validaciones de frontend y backend.</p>
+          <p>Necesitas un ascesor? Envianos un mensaje</p>
 
           <AuthForm
             :fields="fields"
@@ -30,12 +30,6 @@ import api from "@/services/api";
 import { isEmailValid, normalizeEmail, resetErrors } from "@/utils/formUtils";
 
 const successMessage = ref("");
-
-// AQUI AGREGAS EL INPUT NUEVO DEL PARCIAL.
-// Ejemplo edad:
- // { model: "edad", label: "Edad", type: "number", placeholder: "Entre 16 y 24" }
-// Ejemplo texto:
-// { model: "descripcion", label: "Descripcion", type: "textarea", placeholder: "Entre 30 y 100 caracteres" }
 const fields = [
   {
     model: "nombre",
@@ -60,7 +54,7 @@ const fields = [
     type: "textarea",
     placeholder: "Escribe tu mensaje"
   },
-  // AQUI AGREGAS LA DEFINICION DEL INPUT NUEVO DEL PARCIAL.
+  
   { model: "edad", label: "Edad", type: "number", placeholder: "Entre 16 y 24" },
 ];
 
@@ -69,9 +63,8 @@ const errors = reactive({
   telefono: "",
   email: "",
   mensaje: "",
-  // AQUI AGREGAS EL ERROR DEL CAMPO NUEVO.
   edad: "",
-  // descripcion: "",
+  
 });
 
 const validarFrontend = (payload) => {
@@ -86,18 +79,9 @@ const validarFrontend = (payload) => {
     errors.email = "Ingresa un correo valido";
   }
 
-  // AQUI AGREGAS LA VALIDACION DE FRONTEND DEL CAMPO NUEVO.
-  // Ejemplo edad entre 16 y 24:
   const edad = Number(payload.edad);
   errors.edad = edad >= 16 && edad <= 24 ? "" : "La edad debe estar entre 16 y 24";
      
-  //
-  // Ejemplo texto entre 30 y 100 caracteres:
-  // const descripcion = payload.descripcion?.trim() || "";
-  // errors.descripcion = descripcion.length >= 30 && descripcion.length <= 100
-  //   ? ""
-  //   : "El texto debe tener entre 30 y 100 caracteres";
-
   return !Object.values(errors).some(Boolean);
 };
 
@@ -130,13 +114,14 @@ const enviarContacto = async (form) => {
 
 <style scoped>
 .contact-page {
+  width: 100%;
   min-height: calc(100vh - 70px);
   padding: 24px;
   color: white;
 }
 
 .contact-box {
-  max-width: 640px;
+  width: 100%;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
