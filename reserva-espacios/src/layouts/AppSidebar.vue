@@ -9,7 +9,7 @@
     <div class="logo">
 
       <div class="logo-box">
-        <span class="logo-icon"><img src="C:\Users\valer\OneDrive\Documentos\GitHub\reserva_espacios\reserva-espacios\public\reservasimg.png"></span>
+        
 
         <div>
           <h2>RESERVAS</h2>
@@ -60,6 +60,14 @@
       >
         <span class="icon">👤</span>
         <span>Perfil</span>
+      </div>
+
+      <div
+        class="item"
+        @click="go('/contacto')"
+      >
+        <span class="icon">@</span>
+        <span>Contacto</span>
       </div>
 
     </div>

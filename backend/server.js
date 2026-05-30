@@ -23,6 +23,7 @@ app.use("/", require("./routes/auth.routes"));
 app.use("/espacios", require("./routes/espacios.routes"));
 app.use("/reservas", require("./routes/reservas.routes"));
 app.use("/usuarios", require("./routes/usuarios.routes"));
+app.use("/contacto", require("./routes/contacto.routes"));
 
 // Deja el manejador de errores al final para atrapar fallos de las rutas.
 app.use(errorHandler);

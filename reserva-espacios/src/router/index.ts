@@ -22,6 +22,7 @@ import SpaceReservations from "@/views/SpaceReservations.vue";
 import EditProfile from "@/views/EditProfile.vue";
 import SpaceEdit from "@/views/SpaceEdit.vue";
 import ReprogramReservation from "@/views/ReprogramReservation.vue";
+import ContactPage from "@/views/ContactPage.vue";
 
 const routes: Array<RouteRecordRaw> = [
 
@@ -120,6 +121,12 @@ const routes: Array<RouteRecordRaw> = [
         path: "edit-reservation/:id",
         component: ReprogramReservation,
         meta: { title: "REPROGRAMAR RESERVACION" }
+      },
+
+      {
+        path: "contacto",
+        component: ContactPage,
+        meta: { title: "CONTACTO" }
       }
 
     ]
